@@ -1,0 +1,51 @@
+version: "3.9"
+
+services:
+
+  auth:
+    build:
+      context: ./services/auth
+      dockerfile: Dockerfile
+    container_name: cybersafe-auth
+    ports:
+      - "8001:8001"
+    env_file:
+      - ./services/auth/.env
+    volumes:
+      - auth_data:/app/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8001/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+
+  chatbot:
+    build:
+      context: ./services/chatbot
+      dockerfile: Dockerfile
+    container_name: cybersafe-chatbot
+    ports:
+      - "8004:8004"
+    volumes:
+      - ./services/chatbot/app/database:/app/app/database
+    restart: unless-stopped
+
+  alerts:
+    build:
+      context: ./services/alerts
+      dockerfile: Dockerfile
+    container_name: cybersafe-alerts
+    ports:
+      - "8005:8005"
+    volumes:
+      - ./services/alerts:/app
+    restart: unless-stopped
+
+volumes:
+  auth_data:
+
+networks:
+  default:
+    name: cybersafe-network

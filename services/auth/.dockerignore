@@ -1,0 +1,21 @@
+# environment
+.env
+
+# python
+__pycache__/
+*.pyc
+
+# database
+*.db
+
+# local files
+data/
+
+# vscode
+.vscode/
+
+# tests cache
+.pytest_cache/
+
+# docker
+*.log

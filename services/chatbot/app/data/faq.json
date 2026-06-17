@@ -1,0 +1,222 @@
+[
+  {
+    "question": ["Qui êtes-vous ?", "Parlez-moi de vous", "C'est quoi Cybersecurity Research Laboratory ?", "Qui est CyberSearchL@b ?"],
+    "answer": "Cybersecurity Research Laboratory (CyberSearchL@b) est un laboratoire de recherche en cybersécurité et intelligence artificielle, créé en 2019. Nous fusionnons expertise technique et IA pour protéger les systèmes d'information, former étudiants et professionnels, et sensibiliser le grand public aux cybermenaces."
+  },
+  {
+    "question": ["Quelle est votre histoire ?", "Quand avez-vous commencé ?", "Depuis quand existez-vous ?", "Comment est né CyberSearchL@b ?"],
+    "answer": "Notre aventure commence en 2019 avec l'objectif de combler le fossé entre l'enseignement académique et le marché de l'emploi. Initialement centré sur la veille technologique, nous nous sommes orientés en 2020 vers la cybersécurité, devenant le Cybersecurity Research Laboratory. Depuis 2024, nous menons des recherches rigoureuses et développons des solutions basées sur l'IA."
+  },
+  {
+    "question": ["Quelle est votre vision ?", "Quels sont vos objectifs ?", "Quelle est votre mission ?", "Que voulez-vous accomplir ?"],
+    "answer": "Notre vision est de devenir le premier laboratoire africain en cybersécurité et intelligence artificielle. Nous voulons créer un pont entre entreprises et universités africaines afin que nos solutions soient directement intégrées dans les systèmes d'information des entreprises. Nous formons étudiants et professionnels, sensibilisons la population et développons des solutions innovantes pour renforcer la cybersécurité en Afrique."
+  },
+  {
+    "question": ["Quels services proposez-vous ?", "Vos prestations ?", "Que proposez-vous aux entreprises ?", "Comment pouvez-vous aider une entreprise ?"],
+    "answer": "Nous accompagnons les entreprises dans l’implémentation de systèmes de sécurité adaptés, réalisons des recherches appliquées pour résoudre leurs problèmes, développons des solutions innovantes et sensibilisons leur personnel aux cybermenaces."
+  },
+  {
+    "question": ["Proposez-vous des formations ?", "Avez-vous des cours ?", "Formez-vous les étudiants ?", "Faites-vous de la sensibilisation ?"],
+    "answer": "Oui ! Nous formons les étudiants des universités africaines, accompagnons leurs projets de recherche et sensibilisons le grand public aux dangers d'Internet. Nous formons également des professionnels capables de protéger efficacement les systèmes d'information."
+  },
+  {
+    "question": ["Quel est votre engagement ?", "À quoi vous engagez-vous ?", "Quelles actions concrètes menez-vous ?", "Comment luttez-vous contre les cybermenaces ?"],
+    "answer": "CyberSearchL@b s'engage à lutter contre la désinformation et les cybermenaces. Nous avons mis en place une plateforme d’assistance pour les victimes de cyberattaques et de fraudes en ligne, permettant de signaler les abus et d’alerter sur les arnaques courantes. Nous voulons aussi créer une base de données nationale sur les techniques des fraudeurs pour protéger la population."
+  },
+  {
+    "question": ["Qui fait partie de votre équipe ?", "Qui sont vos fondateurs ?", "Présentez-moi vos experts", "Qui travaille chez vous ?"],
+    "answer": "Notre équipe est composée de spécialistes en cybersécurité, en réseaux, en développement web et mobile, ainsi qu'en gestion des médias sociaux. Parmi eux : A. Ngueyep Ulrich Joel (Fondateur), Ewane Arthur Ulrich (Co-fondateur), Djakoua Ngomsi Michael, Tatchum Lionel, Lekane Junior Ulrich, Kenmoe Ivan, Fokou Fosso Jordan, Issa Abakar Bachar, Ghislain Bella."
+  },
+  {
+    "question": ["Quels sont vos piliers ?", "Sur quoi repose votre approche ?", "Quelles sont vos valeurs ?"],
+    "answer": "Nos piliers sont : la Veille Cybernétique (surveillance active des menaces, adaptation aux nouvelles technologies), l’Innovation par la Recherche (solutions innovantes, recherche appliquée, développement expérimental) et la Créativité par l’Ingénierie (développement de solutions concrètes, implémentation technique, innovation pratique)."
+  },
+  {
+    "question": ["Comment vous contacter ?", "Avez-vous un contact ?", "Vos coordonnées ?", "Comment puis-je vous joindre ?"],
+    "answer": "Vous pouvez nous contacter via notre site web, email ou WhatsApp pour toute demande d'information, partenariat, démonstration ou assistance."
+  },
+  {
+    "question": ["Puis-je demander une démo ?", "Comment voir vos solutions en action ?", "Proposez-vous une démonstration ?"],
+    "answer": "Oui, vous pouvez demander une démo personnalisée de nos solutions en cybersécurité et intelligence artificielle avec nos experts."
+  },
+  {
+    "question": ["Avez-vous une newsletter ?", "Comment rester informé ?", "Puis-je recevoir vos actualités ?"],
+    "answer": "Oui, nous proposons une newsletter pour rester informé de nos actualités et innovations en cybersécurité."
+  },
+  {
+    "question": ["Comment vous contacter ?", "Avez-vous un contact ?", "Vos coordonnées ?", "Comment puis-je vous joindre ?"],
+    "answer": "Vous pouvez nous contacter par téléphone (+237 620126427 / +237 694556542 / +237 676767940) ou par email à contact@cybersearchlab.com."
+  },
+  {
+    "question": ["Avez-vous un numéro de téléphone ?", "Quel est votre numéro ?", "Puis-je vous appeler ?"],
+    "answer": "Oui, vous pouvez nous joindre aux numéros suivants : +237 620126427, +237 694556542, +237 676767940."
+  },
+  {
+    "question": ["Quel est votre email ?", "Avez-vous une adresse email ?", "Comment vous écrire par email ?"],
+    "answer": "Notre adresse email principale est contact@cybersearchlab.com. Pour l’assistance, vous pouvez écrire à help@cybersearchlab.com."
+  },
+  {
+    "question": ["Où êtes-vous situés ?", "Quelle est votre adresse ?", "Où se trouve votre bureau ?"],
+    "answer": "Nous sommes situés à Yaoundé (Nouvelle Route Bastos) et à Douala, Cameroun."
+  },
+  {
+    "question": ["Avez-vous WhatsApp ?", "Puis-je vous écrire sur WhatsApp ?", "Est-ce que vous êtes disponibles sur WhatsApp ?"],
+    "answer": "Oui, vous pouvez aussi nous contacter via WhatsApp aux numéros +237 620126427 ou +237 694556542."
+  },
+  {
+    "question": ["Proposez-vous une démo ?", "Puis-je demander une démonstration ?", "Comment tester vos solutions ?"],
+    "answer": "Oui, il est possible de planifier une démonstration personnalisée de nos solutions en cybersécurité et intelligence artificielle avec nos experts."
+  },
+  {
+    "question": ["Avez-vous une newsletter ?", "Comment rester informé ?", "Proposez-vous des actualités ?"],
+    "answer": "Oui, nous proposons une newsletter pour suivre nos actualités et innovations en cybersécurité. Vous pouvez vous abonner directement via notre site web."
+  },
+  {
+    "question": ["Comment puis-je investir dans votre laboratoire ?", "Est-il possible d’investir chez vous ?", "Comment devenir investisseur ?", "Je veux investir dans la cybersécurité avec vous"],
+    "answer": "Oui, nous proposons des opportunités d’investissement dans la cybersécurité et l’intelligence artificielle. Notre processus se déroule en 4 étapes : 1) Premier contact, 2) Présentation détaillée, 3) Due diligence (accès aux documents et projections financières), 4) Finalisation de l’investissement."
+  },
+  {
+    "question": ["Pourquoi investir maintenant ?", "Quels sont vos arguments pour les investisseurs ?", "Pourquoi je devrais investir dans CRL aujourd’hui ?"],
+    "answer": "Le marché de la cybersécurité est en forte croissance (+10 à 12% par an). Le coût moyen d’une violation de données atteint 4,88 millions USD en 2024. Notre approche unique alliant IA et cybersécurité offre un fort potentiel de croissance et un positionnement stratégique en Afrique et à l’international."
+  },
+  {
+    "question": ["Quelle est votre vision à long terme ?", "Où vous voyez-vous dans 5 ans ?", "Quelles sont vos ambitions futures ?"],
+    "answer": "Notre vision est de devenir, d’ici 5 ans, un acteur clé de la cybersécurité en Afrique et à l’international, en développant des solutions adaptées aux réalités locales et en formant une nouvelle génération d’experts en cybersécurité."
+  },
+  {
+    "question": ["Puis-je collaborer avec vous ?", "Comment devenir partenaire ?", "Proposez-vous des partenariats ?", "Puis-je travailler en collaboration avec votre laboratoire ?"],
+    "answer": "Oui, nous proposons plusieurs types de partenariats : technologique, commercial, stratégique et de service. Chaque partenariat est conçu pour une collaboration gagnant-gagnant, avec expertise partagée, co-création de solutions et visibilité accrue."
+  },
+  {
+    "question": ["Quels sont les avantages à devenir partenaire ?", "Pourquoi collaborer avec vous ?", "Qu’apporte un partenariat avec CRL ?"],
+    "answer": "Nos partenaires bénéficient de notre expertise en cybersécurité et IA, de la co-création de solutions sur mesure, d’une visibilité accrue auprès de notre réseau, et d’une accélération de leur croissance via notre écosystème d’innovation."
+  },
+  {
+    "question": ["Comment soumettre un projet ?", "Puis-je vous proposer une idée ou un projet ?", "Comment déposer un projet innovant chez vous ?"],
+    "answer": "Oui, vous pouvez soumettre votre projet via notre formulaire en ligne. Fournissez le nom du projet, le secteur d’activité, une description détaillée et, si possible, des documents complémentaires (PDF, Word, Excel). Un expert vous contactera sous 2 à 3 jours ouvrables."
+  },
+  {
+    "question": ["Quels types de projets acceptez-vous ?", "Quel genre d’idées puis-je soumettre ?", "Quels projets recherchez-vous ?"],
+    "answer": "Nous acceptons tout projet lié à la cybersécurité, l’intelligence artificielle, l’ingénierie logicielle et les innovations numériques. Que votre idée soit au stade conceptuel ou déjà avancée, nous proposons un accompagnement personnalisé."
+  },
+  {
+    "question": ["Comment puis-je contacter le support ?", "Quels moyens de contact proposez-vous ?", "Comment avoir de l’aide technique ?", "Avez-vous un support client ?"],
+    "answer": "Vous pouvez nous contacter via différents canaux : WhatsApp (24/7), appel direct (Lun-Ven, 9h-18h), email (réponse sous 24h), formulaire de contact en ligne, ou notre assistant virtuel pour une aide immédiate."
+  },
+  {
+    "question": ["Avez-vous un support WhatsApp ?", "Puis-je vous écrire sur WhatsApp ?", "Votre WhatsApp est disponible quand ?"],
+    "answer": "Oui, notre support est disponible sur WhatsApp 24h/24 et 7j/7 pour une réponse rapide."
+  },
+  {
+    "question": ["Puis-je vous appeler ?", "Quels sont vos horaires téléphoniques ?", "Avez-vous un numéro de téléphone pour le support ?"],
+    "answer": "Oui, vous pouvez nous appeler directement du lundi au vendredi, entre 9h et 18h, pour joindre notre équipe de support technique."
+  },
+  {
+    "question": ["Combien de temps pour avoir une réponse par email ?", "Puis-je vous écrire par email ?", "Votre support par email existe-t-il ?"],
+    "answer": "Oui, vous pouvez nous envoyer un email pour vos demandes détaillées. Nous garantissons une réponse sous 24 heures."
+  },
+  {
+    "question": ["Avez-vous un assistant virtuel ?", "Je veux parler avec le chatbot", "Donnez-moi votre bot d’assistance"],
+    "answer": "Oui, notre assistant virtuel est disponible pour vous fournir une réponse instantanée et vous guider dans vos démarches."
+  },
+  {
+    "question": ["Puis-je demander une démonstration ?", "Comment planifier une démo ?", "Offrez-vous des démonstrations de vos solutions ?"],
+    "answer": "Oui, vous pouvez planifier une démonstration personnalisée d’environ 45 minutes. Un expert technique sera présent pour répondre à vos questions, et la session peut être adaptée à vos besoins. Après la démo, nous assurons un suivi personnalisé."
+  },
+  {
+    "question": ["Quels domaines d’innovation proposez-vous ?", "Sur quoi travaillez-vous en cybersécurité ?", "Vos solutions concernent quoi ?"],
+    "answer": "Nos domaines d’innovation incluent : les solutions de cybersécurité basées sur l’IA, la détection et prévention avancée des menaces, l’analyse prédictive des risques, et la protection intelligente des données sensibles."
+  },
+  {
+    "question": ["Quelles formations proposez-vous ?", "Quels sont vos cours ?", "Offrez-vous des formations en cybersécurité ?"],
+    "answer": "Nous proposons des formations variées : introduction à la cybersécurité, analyse de malware, sécurité des réseaux, cryptographie, IAM, sécurité des applications web et mobiles, gestion des incidents, ainsi que des formations en intelligence artificielle appliquée à la cybersécurité (machine learning, automatisation, prédiction des menaces, etc.)."
+  },
+  {
+    "question": ["Pourquoi choisir vos formations ?", "Quels sont les avantages de vos formations ?", "Pourquoi me former chez vous ?"],
+    "answer": "Nos formations sont animées par des experts du domaine, donnent accès à des certifications reconnues, offrent une flexibilité selon votre emploi du temps, et reposent sur une pratique intensive avec des projets concrets et des cas réels."
+  },
+  {
+    "question": ["Comment m’inscrire à vos formations ?", "Puis-je postuler à une formation ?", "Quel est le processus d’inscription ?"],
+    "answer": "Pour vous inscrire, remplissez notre formulaire d’inscription en ligne. Vous devrez fournir vos coordonnées, votre spécialité, le type de formation souhaitée (Cybersécurité, IA, Développement Web, etc.), et votre moyen de contact préféré. Nous vous recontacterons rapidement."
+  },
+  {
+    "question": ["Quels services d’audit proposez-vous ?", "Avez-vous un audit de cybersécurité ?", "Quels types d’audit faites-vous ?"],
+    "answer": "Nous proposons trois grands types d’audits :\n- **Audit technique** : tests d’intrusion, analyse des vulnérabilités, audit de configuration, revue de code, sécurité réseau.\n- **Audit de conformité** : RGPD, ISO 27001, analyse des risques réglementaires, vérification des politiques.\n- **Audit organisationnel** : gouvernance, processus internes, gestion des accès et privilèges, procédures et maturité sécurité."
+  },
+  {
+    "question": ["Pourquoi faire un audit de cybersécurité ?", "Quels sont les avantages d’un audit ?", "À quoi sert un audit sécurité ?"],
+    "answer": "Un audit permet de :\n- Identifier et corriger les vulnérabilités critiques (85% des attaques sont évitables avec un audit régulier).\n- Améliorer la performance et réduire les coûts.\n- Garantir la conformité aux normes (ISO 27001, RGPD).\n- Protéger efficacement les données sensibles."
+  },
+  {
+    "question": ["Quelle est votre méthodologie d’audit ?", "Comment se déroule un audit ?", "Quelles sont les étapes de votre audit sécurité ?"],
+    "answer": "Notre méthodologie comprend 4 étapes :\n1. **Analyse initiale** : évaluation de l’infrastructure et des besoins.\n2. **Audit détaillé** : examen des systèmes et processus.\n3. **Analyse des résultats** : identification des vulnérabilités.\n4. **Recommandations** : plan d’action clair et priorisé."
+  },
+  {
+    "question": ["Quels sont vos projets en cybersécurité ?", "Sur quoi travaillez-vous actuellement ?", "Pouvez-vous donner des exemples de vos solutions ?"],
+    "answer": "Nos projets phares :\n- **InnovSécu** : plateforme IA de protection contre les ransomwares (97.5% taux de détection, <200ms temps de réponse).\n- **SecurePhishing** : solution de protection contre le phishing avec pare-feu intelligent et analyse comportementale.\nCes projets offrent une surveillance proactive et une réponse automatisée contre les cybermenaces."
+  },
+  {
+    "question": ["Quels projets préparez-vous pour l’avenir ?", "Quels sont vos futurs développements ?", "Avez-vous une vision pour les prochaines années ?"],
+    "answer": "Oui, nous développons :\n- **Application de sensibilisation** aux lois numériques et cyberattaques.\n- **Programme de libéralisation de l’IA** pour démocratiser l’automatisation en entreprise (RH, finance, logistique).\n- **IA pour téléconseillers** : assistance vocale intelligente.\n- **Lidia** : assistant IA pour conférences et présentations.\nObjectif : créer un écosystème complet IA + cybersécurité en Afrique."
+  },
+  {
+    "question": ["Pourquoi vos projets sont-ils importants ?", "Quel est l’impact de vos solutions ?", "En quoi vos projets aident les entreprises ?"],
+    "answer": "Nos solutions permettent :\n- Une détection proactive des menaces.\n- Une réduction des coûts liés aux cyberattaques (qui coûtent plusieurs milliards chaque année).\n- Une protection adaptée aux réalités locales et internationales.\n- Une amélioration de l’efficacité opérationnelle grâce à l’IA."
+  },
+  {
+    "question": ["Comment vous contacter pour un audit ?", "Puis-je demander un diagnostic sécurité ?", "Comment obtenir vos services d’audit ?"],
+    "answer": "Vous pouvez nous contacter directement par téléphone (+237 620126427 / +237 694556542 / +237 676767940) ou par email (contact@cybersearchlab.com). Nous proposons un diagnostic personnalisé et un premier rapport d’analyse sous 48h."
+  },
+  {
+    "question": ["Qu’est-ce que le Cybersecurity Research Laboratory ?", "Qui est CRL ?", "Pouvez-vous présenter votre laboratoire ?"],
+    "answer": "Le **Cybersecurity Research Laboratory (CRL)** est un centre de recherche de pointe dédié à l’innovation en cybersécurité grâce à l’intelligence artificielle. Notre mission est de protéger les infrastructures critiques et d’accompagner les entreprises avec des solutions innovantes basées sur l’IA, la cybersécurité et le développement logiciel sécurisé."
+  },
+  {
+    "question": ["Quels services proposez-vous ?", "Quelles sont vos activités principales ?", "Que fait CRL concrètement ?"],
+    "answer": "Nous proposons 4 grands pôles de services :\n- **Recherche & Innovation** : développement de nouvelles solutions de cybersécurité.\n- **Ingénierie & Développement** : conception d’applications et intégration de l’IA.\n- **Audit & Conseil** : identification des vulnérabilités et optimisation de la sécurité.\n- **Assistance & Enquêtes** : investigations numériques et gestion d’incidents."
+  },
+  {
+    "question": ["Quels sont vos objectifs ?", "Quelle est votre vision ?", "Quelles sont vos priorités ?"],
+    "answer": "Nos objectifs principaux :\n1. **Innovation continue** : créer des solutions de sécurité avancées.\n2. **Excellence opérationnelle** : améliorer en permanence nos processus.\n3. **Collaboration client** : travailler en étroite synergie avec nos partenaires.\n4. **Veille technologique** : rester à jour sur les menaces et technologies.\n5. **Formation continue** : renforcer les compétences de nos équipes et partenaires."
+  },
+  {
+    "question": ["Quels services d’assistance proposez-vous ?", "Pouvez-vous enquêter sur un piratage ?", "Aidez-vous en cas d’incident ?"],
+    "answer": "Oui ✅. Nos services d’assistance incluent :\n- **Analyse forensique** : investigation numérique des systèmes compromis.\n- **Réponse aux incidents** : intervention rapide pour contenir et corriger les attaques.\n- **Surveillance continue** : monitoring proactif pour détecter toute activité suspecte.\nNous accompagnons nos clients depuis l’évaluation initiale jusqu’au rapport final et aux recommandations."
+  },
+  {
+    "question": ["Pourquoi la recherche est importante pour vous ?", "Quels sont vos axes de recherche ?", "Sur quoi travaillez-vous en cybersécurité et IA ?"],
+    "answer": "La recherche est notre moteur. Elle nous permet d’anticiper les menaces et de créer des solutions innovantes. Nos domaines de recherche actuels :\n- **IA générative sécurisée** (ChatGPT, modèles explicables).\n- **Détection des deepfakes** et lutte contre la désinformation.\n- **Cybersécurité quantique** et cryptographie résistante.\n- **Sécurité IoT et 5G**.\n- **IA éthique et explicable (XAI)**.\n- **Sécurité cloud & DevSecOps**."
+  },
+  {
+    "question": ["Proposez-vous des solutions IA personnalisées ?", "Développez-vous des projets IA ?", "Puis-je vous confier un projet IA sur mesure ?"],
+    "answer": "Oui, nous développons des **solutions d’IA sur mesure** adaptées aux besoins spécifiques de chaque client. Domaines d’application :\n- **Vision par ordinateur** (reconnaissance, détection de défauts, surveillance).\n- **Traitement du langage** (chatbots, analyse de sentiment, classification).\n- **Analyse prédictive** (tendances, maintenance, optimisation, risques).\nNotre processus : analyse des besoins → conception → développement agile → déploiement & support."
+  },
+  {
+    "question": ["Comment puis-je vous contacter ?", "Quels sont vos moyens de contact ?", "Comment obtenir plus d’informations ?"],
+    "answer": "Vous pouvez nous contacter :\n- **Téléphone (Standard)** : +237 676767940\n- **Service Commercial** : +237 620126427\n- **Email** : contact@cybersearchlab.com\n- **Support** : help@cybersearchlab.com\nNous sommes présents à **Yaoundé** et **Douala**. Vous pouvez aussi demander une démo ou vous inscrire à notre newsletter sur notre site."
+  },
+  {
+    "question": ["Qu’est-ce que le Cybersecurity Research Laboratory ?", "Pouvez-vous présenter CRL ?", "Qui êtes-vous ?"],
+    "answer": "Le **Cybersecurity Research Laboratory (CRL)** est un centre de recherche de pointe où l’intelligence artificielle rencontre l’innovation en cybersécurité. Nous protégeons les systèmes, développons des solutions IA et concevons des applications logicielles sécurisées pour les entreprises."
+  },
+  {
+    "question": ["Quels sont vos services ?", "Que proposez-vous comme prestations ?", "Quels sont vos domaines d’activité ?"],
+    "answer": "Nos principaux services :\n- **Recherche et Innovation** : créer des solutions de cybersécurité avancées.\n- **Ingénierie et Développement** : exploiter l’IA pour automatiser et sécuriser.\n- **Audit et Conseil** : identifier les vulnérabilités et améliorer la posture de sécurité.\n- **Assistance & Enquêtes** : investiguer et résoudre les incidents de cybersécurité."
+  },
+  {
+    "question": ["Quels sont vos objectifs ?", "Quelle est votre vision ?", "Quels sont vos axes prioritaires ?"],
+    "answer": "Nos objectifs clés :\n1. **Innovation continue** : développement constant de nouvelles solutions.\n2. **Excellence opérationnelle** : optimiser les processus et performances.\n3. **Collaboration client** : travailler en synergie avec nos partenaires.\n4. **Veille technologique** : surveiller les menaces émergentes.\n5. **Formation continue** : renforcer sans cesse les compétences de nos équipes."
+  },
+  {
+    "question": ["Proposez-vous une assistance en cas de piratage ?", "Pouvez-vous enquêter après une cyberattaque ?", "Aidez-vous à résoudre un incident de sécurité ?"],
+    "answer": "Oui ✅. Nous proposons une assistance complète :\n- **Analyse Forensique** : identifier les traces et méthodes d’intrusion.\n- **Réponse aux Incidents** : contenir et remédier aux attaques rapidement.\n- **Surveillance Continue** : monitorer les systèmes pour détecter toute anomalie.\nNous accompagnons nos clients tout au long du processus : évaluation initiale → investigation → remédiation → rapport & recommandations."
+  },
+  {
+    "question": ["Comment fonctionne votre processus d’intervention ?", "Quelles étapes suivez-vous en cas d’incident ?", "Comment gérez-vous une enquête numérique ?"],
+    "answer": "Notre processus d’intervention se déroule en 4 étapes :\n1️⃣ **Évaluation initiale** : analyser l’incident et estimer l’impact.\n2️⃣ **Investigation** : collecter et examiner les preuves numériques.\n3️⃣ **Remédiation** : sécuriser et corriger les failles.\n4️⃣ **Rapport & Recommandations** : fournir une documentation complète et des conseils préventifs."
+  },
+  {
+    "question": ["Comment vous contacter ?", "Comment demander un diagnostic ?", "Quels sont vos moyens de communication ?"],
+    "answer": "Pour un diagnostic personnalisé ou une assistance :\n- **Email** : contact@cybersearchlab.com\n- **Support** : help@cybersearchlab.com\n- **Téléphone (Standard)** : +237 676767940\n- **Service Commercial** : +237 620126427\nVous pouvez aussi remplir notre formulaire en ligne pour demander un **diagnostic gratuit** ou une **démonstration personnalisée**."
+  }
+]
