@@ -1,19 +1,366 @@
+#services/Auth/Dockerfile.dev
+# =============================================================================
+# CyberSafe Connect - Auth Microservice Dockerfile (Development)
+# =============================================================================
+#
+# This Dockerfile is optimized for local development with hot-reload support.
+# It includes build tools and debugging capabilities not suitable for production.
+#
+# =============================================================================
+# DOCKER BUILD COMMANDS
+# =============================================================================
+#
+# Build the image:
+#     docker build -f Dockerfile.dev -t cybersafe-academy:dev .
+#
+# Run the container with PostgreSQL:
+#     docker-compose -f docker-compose.dev.yml up --build auth postgres
+#
+# =============================================================================
+# LAYER ARCHITECTURE
+# =============================================================================
+#
+# This Dockerfile follows a layered architecture to optimize build caching:
+#
+# Layer 1: Base Image         (python:3.11-slim)
+# Layer 2: Environment        (WORKDIR, ENV variables)
+# Layer 3: System Dependencies (apt-get packages)
+# Layer 4: Directory Creation (mkdir)
+# Layer 5: Python Dependencies (requirements.txt)
+# Layer 6: Application Code   (COPY . .)
+# Layer 7: Runtime Command    (CMD)
+#
+# =============================================================================
+
+
+# =============================================================================
+# LAYER 1: BASE IMAGE SELECTION
+# =============================================================================
+#
+# FROM specifies the parent image for this container.
+#
+# Why python:3.11-slim?
+# ----------------------
+# • python:3.11  : Stable Python version with long-term support (LTS).
+# • slim variant : Minimal Debian-based image (reduced attack surface).
+# • Smaller size : ~120MB vs ~900MB for full image.
+#
+# Security Considerations:
+# -------------------------
+# • Slim images have fewer pre-installed packages = fewer vulnerabilities.
+# • Alpine variants are smaller but can cause compatibility issues
+#   with C extensions (psycopg2, cryptography).
+# • Python 3.11 has security patches not present in older versions.
+#
 FROM python:3.11-slim
 
+
+# =============================================================================
+# LAYER 2: METADATA & ENVIRONMENT CONFIGURATION
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# WORKDIR - Set the working directory inside the container
+# -----------------------------------------------------------------------------
+#
+# All subsequent commands will execute from this directory.
+# This creates a clean, isolated workspace for the application.
+#
+# Security Note:
+# --------------
+# • Using /app as a non-system directory reduces the risk of
+#   accidentally overwriting critical system files.
+# • The WORKDIR is owned by root initially (will be changed later).
+#
 WORKDIR /app
 
+# -----------------------------------------------------------------------------
+# ENV - Python runtime environment variables
+# -----------------------------------------------------------------------------
+
+# PYTHONDONTWRITEBYTECODE=1
+# -------------------------
+# Prevents Python from creating .pyc bytecode cache files.
+#
+# Benefits:
+# ---------
+# • Reduces disk space usage inside the container.
+# • Prevents stale bytecode from being used after code changes.
+# • Security: Fewer files = smaller attack surface.
+#
 ENV PYTHONDONTWRITEBYTECODE=1
+
+# PYTHONUNBUFFERED=1
+# ------------------
+# Forces Python to send logs directly to stdout/stderr without buffering.
+#
+# Benefits:
+# ---------
+# • Real-time log visibility for debugging.
+# • All logs are captured by Docker's logging system.
+# • Essential for container orchestration (Kubernetes, Docker Swarm).
+#
+# Security Note:
+# --------------
+# • Unbuffered logs ensure that all application activity is
+#   immediately available for security monitoring.
+#
 ENV PYTHONUNBUFFERED=1
 
-RUN apt-get update && apt-get install -y gcc build-essential
 
+# =============================================================================
+# LAYER 3: SYSTEM DEPENDENCIES
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Install operating system packages required for Python dependencies
+# -----------------------------------------------------------------------------
+#
+# Each package serves a specific purpose:
+#
+# Package            | Purpose                                      | Required By
+# -------------------|----------------------------------------------|------------
+# gcc                | C compiler for compiling Python extensions   | psycopg2
+# build-essential    | Build tools (make, g++, etc.)               | psycopg2
+# libpq-dev          | PostgreSQL client libraries and headers     | psycopg2
+#
+# Why these are needed:
+# ----------------------
+# • psycopg2-binary is the PostgreSQL adapter for Python.
+# • The binary wheels may not be available for all architectures.
+# • When binary wheels are missing, pip compiles from source.
+# • Compilation requires the PostgreSQL client development libraries.
+#
+# Security Considerations:
+# -------------------------
+# 1. Chain commands with '&&' to fail fast on errors.
+# 2. Clean apt cache with 'rm -rf /var/lib/apt/lists/*' to:
+#    • Reduce image size by ~50MB.
+#    • Remove package lists that could contain sensitive metadata.
+#    • Prevent outdated package lists from being cached.
+# 3. Install only required packages (minimal attack surface).
+# 4. The build tools (gcc, build-essential) are development dependencies
+#    and could be removed in production to reduce attack surface.
+#
+# TODO: In production Dockerfile, use multi-stage builds to remove
+#       build tools after compiling Python dependencies.
+#
+RUN apt-get update && apt-get install -y \
+    gcc \
+    build-essential \
+    libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+
+# =============================================================================
+# LAYER 4: DIRECTORY CREATION
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Create application data directory
+# -----------------------------------------------------------------------------
+#
+# This directory is used for:
+# • Persistent data storage (SQLite, file uploads, etc.)
+# • Volume mounting for development (sync with host)
+# • Temporary file storage during processing
+#
+# Why this is needed:
+# -------------------
+# • The container is ephemeral - data is lost on restart.
+# • A mount point is needed for persistent storage volumes.
+# • Pre-creating the directory ensures proper permissions.
+#
+# Security Note:
+# --------------
+# • The directory is owned by root (will be changed in production).
+# • In production, use a non-root user to limit file access.
+# • Avoid storing sensitive data in /app/data without encryption.
+#
 RUN mkdir -p /app/data
 
+
+# =============================================================================
+# LAYER 5: PYTHON DEPENDENCIES
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Copy and install Python dependencies
+# -----------------------------------------------------------------------------
+#
+# Requirements file contains all Python packages needed for the application.
+# This includes: FastAPI, SQLAlchemy, Pydantic, etc.
+#
+# Optimized Docker Caching Strategy:
+# -----------------------------------
+# 1. COPY requirements.txt FIRST (only the dependency file).
+# 2. Run pip install.
+# 3. COPY application code AFTER (changes more frequently).
+#
+# Why this is optimal:
+# --------------------
+# • Docker caches each layer.
+# • requirements.txt changes much less often than application code.
+# • When requirements.txt doesn't change, Docker reuses the cached layer.
+# • This saves 1-5 minutes per build during active development.
+#
+# Security Notes:
+# ---------------
+# • '--no-cache-dir' prevents pip from caching downloaded packages.
+# • This reduces image size by ~50-100MB.
+# • The cache would also store package metadata and versions.
+# • Each RUN instruction creates a new layer (cached independently).
+#
 COPY requirements.txt .
 
+# Upgrade pip to the latest version:
+# • Fixes compatibility issues with older pip versions.
+# • Includes security patches for pip itself.
+# • Ensures support for latest package formats (pyproject.toml, wheel).
+#
 RUN pip install --upgrade pip
+
+# Install all Python dependencies:
+# • Reads packages from requirements.txt.
+# • Uses --no-cache-dir to minimize image size.
+# • Downloads packages from PyPI (Python Package Index).
+#
 RUN pip install --no-cache-dir -r requirements.txt
 
+
+# =============================================================================
+# LAYER 6: APPLICATION CODE
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Copy the application source code into the container
+# -----------------------------------------------------------------------------
+#
+# This copies everything from the build context (current directory)
+# into the container's /app directory.
+#
+# The .dockerignore file is used to exclude:
+# • __pycache__ directories
+# • .git directory
+# • .env files (secrets)
+# • node_modules, etc.
+#
+# Why this is placed AFTER dependency installation:
+# ------------------------------------------------
+# • Application code changes frequently (every save).
+# • Dependencies change rarely (days or weeks).
+# • By placing this after pip install, we preserve the cache layer.
+# • This is the #1 Docker optimization technique for Python.
+#
+# Security Considerations:
+# -------------------------
+# • Ensure .dockerignore excludes sensitive files (.env, .git, etc.).
+# • Never copy secrets, passwords, or API keys into the container.
+# • Use environment variables or Docker secrets for credentials.
+#
+COPY . .
+
+
+# =============================================================================
+# LAYER 7: PORT EXPOSURE & RUNTIME COMMAND
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# EXPOSE - Declare the network port the container listens on
+# -----------------------------------------------------------------------------
+#
+# This is primarily documentation for container orchestration.
+# It does NOT publish the port to the host machine.
+#
+# To publish ports, use the -p flag or docker-compose ports mapping.
+#
+# Example: docker run -p 8001:8001 -p 127.0.0.1:8001:8001
+#
+# Port Selection: 8001
+# --------------------
+# • Non-standard port (not 8000, 8080, 3000).
+# • Reduces automated scanning attacks targeting common ports.
+# • Standard for the academy microservice in this project.
+#
+# Security Note:
+# --------------
+# • The port is only exposed to other containers on the same network.
+# • To expose to host, use port mapping in docker-compose.yml.
+# • In production, use a reverse proxy (nginx, Traefik) in front.
+# • Restrict access with firewall rules and network policies.
+#
 EXPOSE 8001
 
+# -----------------------------------------------------------------------------
+# CMD - Default command executed when the container starts
+# -----------------------------------------------------------------------------
+#
+# This command runs the FastAPI application using Uvicorn (ASGI server).
+#
+# Command breakdown:
+# ------------------
+# uvicorn           : ASGI server for FastAPI applications.
+# app:app           : Module 'app.py', variable 'app' (FastAPI instance).
+# --host 0.0.0.0    : Bind to all network interfaces.
+# --port 8001       : Listen on port 8001 (must match EXPOSE).
+# --reload          : Auto-restart when code changes (development only!).
+#
+# Why uvicorn with --reload for development:
+# ------------------------------------------
+# • Automatic reload on code changes (instant feedback).
+# • No need to restart the container manually.
+# • Ideal for iterative development and debugging.
+#
+# WARNING - NEVER use --reload in production:
+# ----------------------------------------------
+# • --reload is a development feature that watches for file changes.
+# • In production, this would waste CPU and cause unnecessary restarts.
+# • For production, use: uvicorn app:app --host 0.0.0.0 --port 8001
+# • Or use a production ASGI server like Gunicorn + Uvicorn workers.
+#
+# Security Considerations:
+# -------------------------
+# • In production, the --reload flag could be a security vulnerability
+#   if someone gains access to modify files on the running container.
+# • Use separate Dockerfiles for development and production:
+#   - Dockerfile.dev   : Contains --reload, build tools, debugging.
+#   - Dockerfile.prod  : No --reload, minimal dependencies, non-root user.
+#
 CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8001", "--reload"]
+
+
+# =============================================================================
+# PRODUCTION IMPROVEMENTS (NOT IMPLEMENTED IN THIS VERSION)
+# =============================================================================
+#
+# The following improvements should be implemented for production:
+#
+# 1. Non-root user: Create a dedicated user to run the application.
+#    USER appuser:appgroup
+#
+# 2. Multi-stage build: Build dependencies in one stage, copy to final.
+#    This removes build tools (gcc, build-essential) from the final image.
+#
+# 3. Remove --reload: Run without reload for production stability.
+#
+# 4. Health checks: Add HEALTHCHECK instruction for container monitoring.
+#
+# 5. Security scanners: Integrate Trivy or Snyk for vulnerability scanning.
+#
+# Example production CMD:
+# CMD ["gunicorn", "-k", "uvicorn.workers.UvicornWorker", "app:app"]
+#
+# Example non-root user:
+# RUN addgroup --system appgroup && adduser --system appuser
+# USER appuser
+#
+# =============================================================================
+# REFERENCES
+# =============================================================================
+#
+# FastAPI Deployment: https://fastapi.tiangolo.com/deployment/
+# Docker Best Practices: https://docs.docker.com/develop/dev-best-practices/
+# Python Docker Images: https://hub.docker.com/_/python
+# Uvicorn Documentation: https://www.uvicorn.org/
+#
+# =============================================================================

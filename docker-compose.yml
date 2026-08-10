@@ -43,8 +43,30 @@ services:
       - ./services/alerts:/app
     restart: unless-stopped
 
+  academy:
+    build:
+      context: ./services/academy
+      dockerfile: Dockerfile
+    container_name: cybersafe-academy
+    ports:
+      - "8006:8006"
+    env_file:
+      - ./services/academy/.env
+    volumes:
+      - academy_data:/app/data
+      - academy_media:/app/media
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8006/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+
 volumes:
   auth_data:
+  academy_data:
+  academy_media:
 
 networks:
   default:

@@ -1,0 +1,124 @@
+# services/academy/Dockerfile.dev
+# =============================================================================
+# CyberSafe Connect - Academy Microservice Dockerfile (Development)
+# =============================================================================
+#
+# This Dockerfile is optimized for local development with hot-reload support.
+# It is NOT suitable for production.
+#
+# =============================================================================
+# DOCKER BUILD & RUN COMMANDS
+# =============================================================================
+#
+# Build the image:
+#     docker build -f Dockerfile.dev -t cybersafe-academy:dev .
+#
+# Run with docker-compose:
+#     docker-compose -f docker-compose.dev.yml up academy
+#
+# =============================================================================
+# LAYER ARCHITECTURE
+# =============================================================================
+#
+# Layer 1: Base Image         (python:3.11-slim)
+# Layer 2: Working Directory  (WORKDIR /app)
+# Layer 3: Python Environment (ENV variables)
+# Layer 4: Directory Creation (mkdir -p /app/data /app/media)
+# Layer 5: Python Dependencies (requirements.txt)
+# Layer 6: Port & Command    (EXPOSE, CMD with --reload)
+#
+# NOTE: This Dockerfile does NOT copy application code.
+#          The code is mounted as a volume in docker-compose.
+#          This allows live code updates without rebuilding.
+#
+# =============================================================================
+
+
+# =============================================================================
+# LAYER 1: BASE IMAGE SELECTION
+# =============================================================================
+#
+# Same base as production, but development tools are not needed.
+# Build tools are not installed because we're not compiling anything.
+#
+FROM python:3.11-slim
+
+
+# =============================================================================
+# LAYER 2: WORKING DIRECTORY
+# =============================================================================
+#
+WORKDIR /app
+
+
+# =============================================================================
+# LAYER 3: PYTHON ENVIRONMENT VARIABLES
+# =============================================================================
+#
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+
+
+# =============================================================================
+# LAYER 4: PERSISTENT STORAGE DIRECTORIES
+# =============================================================================
+#
+# Create directories for volumes that will be mounted.
+#
+RUN mkdir -p /app/data /app/media
+
+
+# =============================================================================
+# LAYER 5: PYTHON DEPENDENCIES
+# =============================================================================
+#
+# Copy requirements and install dependencies.
+# This is done BEFORE mounting volumes to optimize caching.
+#
+COPY requirements.txt .
+
+RUN pip install --no-cache-dir -r requirements.txt
+
+
+# =============================================================================
+# LAYER 6: PORT EXPOSURE & RUNTIME COMMAND
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# EXPOSE - Declare the network port
+# -----------------------------------------------------------------------------
+#
+EXPOSE 8006
+
+# -----------------------------------------------------------------------------
+# CMD - Development runtime command (WITH --reload)
+# -----------------------------------------------------------------------------
+#
+# Why --reload is used in development:
+# ------------------------------------
+# • Watches for file changes and auto-restarts the server.
+# • Provides instant feedback during active development.
+# • The code is mounted as a volume from the host.
+# • Any code change triggers an automatic restart.
+#
+# WARNING: --reload should NEVER be used in production.
+#             It consumes CPU resources and is a security risk.
+#
+CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8006", "--reload"]
+
+
+# =============================================================================
+# COMPARISON: DEV vs PRODUCTION
+# =============================================================================
+#
+# Feature               | Development (Dockerfile.dev) | Production (Dockerfile)
+# ----------------------|------------------------------|------------------------
+# Code source           | Mounted as volume           | Copied into image
+# Code updates          | Instant (no rebuild)        | Requires rebuild
+# --reload              | YES                         | NO
+# Non-root user         | NO (not needed for dev)     | YES (critical)
+# Build tools           | NO                          | YES (if needed)
+# Image size            | Smaller (no build tools)    | Slightly larger
+# Security hardening    | Minimal                     | Maximum
+#
+# =============================================================================

@@ -1,31 +1,282 @@
+# =============================================================================
+# CyberSafe Connect Platform
+# =============================================================================
+# Development Docker Compose Configuration
+#
+# Purpose
+# -------
+# Local development environment for all CyberSafe Connect microservices.
+#
+# Included services
+# -----------------
+# 1. PostgreSQL database
+# 2. Authentication service
+# 3. Academy service
+# 4. Alerts service
+# 5. Chatbot service
+#
+# Security Principles
+# -------------------
+# • Centralized PostgreSQL database
+# • Internal Docker network isolation
+# • Service startup dependency validation
+# • Persistent database volume protection
+# • No hardcoded credentials inside source code
+#
+# Production notes
+# ----------------
+# This file is intended ONLY for development.
+#
+# Production must include:
+#
+# • Secrets manager
+# • Reverse proxy (Nginx / Traefik)
+# • TLS certificates
+# • Private network segmentation
+# • Read-only containers when possible
+#
+# =============================================================================
+
 services:
+
+  # ===========================================================================
+  # POSTGRESQL DATABASE
+  # ===========================================================================
+  #
+  # Central relational database shared across microservices.
+  #
+  # Responsibilities:
+  #
+  # • Store authentication data
+  # • Store academy content
+  # • Store alerts metadata
+  #
+  # Security:
+  #
+  # • Internal network only
+  # • Persistent volume encryption recommended in production
+  #
+  # ===========================================================================
+
+  postgres:
+    image: postgres:16-alpine
+
+    container_name: cybersafe-postgres
+
+    restart: unless-stopped
+
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 6fe560d6195e31a0b41810dd97e5a6c1d608a53031dbc8a94f9dc2a278597253
+      POSTGRES_DB: cybersafe_auth
+    ports:
+      - "5432:5432"
+
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+
+      interval: 5s
+
+      timeout: 5s
+
+      retries: 5
+
+    networks:
+      - cybersafe-network
+
+
+  # ===========================================================================
+  # AUTHENTICATION MICROSERVICE
+  # ===========================================================================
+  #
+  # Responsibilities:
+  #
+  # • User registration
+  # • Email verification (OTP)
+  # • JWT token generation
+  # • Authentication middleware
+  #
+  # Security:
+  #
+  # • Handles password hashing
+  # • Issues access and refresh tokens
+  # • Must NEVER expose database credentials in source code
+  #
+  # ===========================================================================
 
   auth:
     build:
       context: ./services/auth
       dockerfile: Dockerfile.dev
+
     container_name: cybersafe-auth
+
+    restart: unless-stopped
+
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 6fe560d6195e31a0b41810dd97e5a6c1d608a53031dbc8a94f9dc2a278597253
+      POSTGRES_DB: cybersafe_auth
+
     ports:
       - "8001:8001"
+
     env_file:
       - ./services/auth/.env
+
     volumes:
       - ./services/auth:/app
-      - auth_data:/app/data
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+    networks:
+      - cybersafe-network
+
+
+  # ===========================================================================
+  # CHATBOT MICROSERVICE
+  # ===========================================================================
+  #
+  # Responsibilities:
+  #
+  # • AI assistant processing
+  # • Security awareness interactions
+  #
+  # ===========================================================================
 
   chatbot:
     build:
       context: ./services/chatbot
       dockerfile: Dockerfile.dev
+
+    restart: unless-stopped
+
     volumes:
       - ./services/chatbot:/app
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+    networks:
+      - cybersafe-network
+
+
+  # ===========================================================================
+  # ALERTS MICROSERVICE
+  # ===========================================================================
+  #
+  # Responsibilities:
+  #
+  # • Security alerts broadcasting
+  # • Fraud notification management
+  #
+  # ===========================================================================
 
   alerts:
     build:
       context: ./services/alerts
       dockerfile: Dockerfile.dev
+
+    restart: unless-stopped
+
     volumes:
       - ./services/alerts:/app
 
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+    networks:
+      - cybersafe-network
+
+
+  # ===========================================================================
+  # ACADEMY MICROSERVICE
+  # ===========================================================================
+  #
+  # Responsibilities:
+  #
+  # • Cybersecurity learning modules
+  # • Quiz evaluation
+  # • Progress tracking
+  #
+  # Security:
+  #
+  # • JWT token validation
+  # • Protected learning progress endpoints
+  #
+  # ===========================================================================
+
+  academy:
+    build:
+      context: ./services/academy
+      dockerfile: Dockerfile.dev
+
+    container_name: cybersafe-academy
+
+    restart: unless-stopped
+
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 094db8c67620a0c1bef7faa6798eef9ccf9b0c7433981307384ab68d568065f8
+      POSTGRES_DB: cybersafe_academy
+
+    ports:
+      - "8006:8006"
+
+    env_file:
+      - ./services/academy/.env
+
+    volumes:
+      - ./services/academy:/app
+
+      - academy_media:/app/media
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+    networks:
+      - cybersafe-network
+
+
+# =============================================================================
+# PERSISTENT VOLUMES
+# =============================================================================
+#
+# postgres_data
+#     Stores PostgreSQL persistent database files.
+#
+# academy_media
+#     Stores uploaded academy media resources.
+#
+# =============================================================================
+
 volumes:
-  auth_data:
+
+  postgres_data:
+
+  academy_media:
+
+
+# =============================================================================
+# INTERNAL NETWORK
+# =============================================================================
+#
+# Isolated bridge network allowing secure communication
+# between internal microservices.
+#
+# Prevents accidental service exposure.
+#
+# =============================================================================
+
+networks:
+
+  cybersafe-network:
+    driver: bridge

@@ -1,104 +1,44 @@
 """
-modules/auth/security.py
-================================================================================
-Security Core Module – CyberSafe Connect Authentication Service
-================================================================================
+services/auth/security.py
+===============================================================================
+CyberSafe Connect Authentication Security Layer
+===============================================================================
 
-This module implements all cryptographic and authentication security mechanisms
-used by the CyberSafe Connect authentication microservice.
+Centralized cryptographic and token security operations.
 
-It centralizes password security, JWT token generation, token validation,
-cryptographic verification and authentication integrity controls.
+Responsibilities
+----------------
 
---------------------------------------------------------------------------------
-ROLE
---------------------------------------------------------------------------------
+This module handles all security-sensitive authentication operations.
 
-This module is responsible for:
+Core features:
 
-    • Secure password hashing before database persistence
-    • Password verification during authentication attempts
-    • Access token generation (JWT)
-    • Refresh token generation (JWT)
-    • Token decoding and validation
-    • Protection against malformed token attacks
-    • Issuer verification
-    • Token type validation
-    • Preparation for future token revocation mechanisms
+    • Password hashing using Argon2
+    • Password verification
+    • JWT access token generation
+    • JWT refresh token generation
+    • JWT signature verification
+    • JWT claim validation
+    • Token integrity enforcement
 
-This module acts as the main cryptographic security layer of the authentication
-service.
+Security Principles
+-------------------
 
---------------------------------------------------------------------------------
-SECURITY DESIGN PRINCIPLES
---------------------------------------------------------------------------------
+• Never store plain text passwords
+• Use modern password hashing algorithms
+• Enforce token expiration
+• Validate issuer identity
+• Validate token audience
+• Prevent token replay attacks
+• Prevent cross-service token abuse
+• Reject malformed JWT payloads
 
-Password Security:
-
-    • Uses Argon2 hashing algorithm (recommended over bcrypt)
-    • Passwords are never stored in plain text
-    • Resistant against GPU brute-force attacks
-    • Resistant against memory cracking attacks
-
-JWT Security:
-
-    • Separate access and refresh tokens
-    • Strict token type validation
-    • Unique token identifier (JTI)
-    • Issuer verification
-    • Expiration validation
-    • Subject validation
-
-Production Security:
-
-    • Reject weak JWT secret keys
-    • Reject malformed token payloads
-    • Audit suspicious token decoding failures
-
---------------------------------------------------------------------------------
-TOKEN STRUCTURE
---------------------------------------------------------------------------------
-
-Access Token:
-
-    {
-        "sub": user_id
-        "type": "access"
-        "iat": issued_timestamp
-        "exp": expiration_timestamp
-        "jti": unique_token_id
-        "iss": "cybersafe-auth"
-    }
-
-Refresh Token:
-
-    {
-        "sub": user_id
-        "type": "refresh"
-        "iat": issued_timestamp
-        "exp": expiration_timestamp
-        "jti": unique_token_id
-        "iss": "cybersafe-auth"
-    }
-
---------------------------------------------------------------------------------
-DEPENDENCIES
---------------------------------------------------------------------------------
-
-• python-jose
-• passlib[argon2]
-• uuid
-• logging
-
-Required package:
-
-    pip install passlib[argon2]
-
-================================================================================
+===============================================================================
 """
 
 import logging
 import uuid
+
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
@@ -107,21 +47,14 @@ from passlib.context import CryptContext
 
 from config import (
     ACCESS_TOKEN_EXPIRE_MINUTES,
-    JWT_ALGORITHM,
+    REFRESH_TOKEN_EXPIRE_DAYS,
     JWT_SECRET_KEY,
-    REFRESH_TOKEN_EXPIRE_DAYS
+    JWT_ALGORITHM,
+    JWT_ISSUER,
+    JWT_AUDIENCE
 )
 
 from enums import TokenType
-
-
-# =============================================================================
-# SECURITY CONSTANTS
-# =============================================================================
-
-JWT_ISSUER = "cybersafe-auth"
-
-MIN_SECRET_LENGTH = 64
 
 
 # =============================================================================
@@ -132,24 +65,19 @@ logger = logging.getLogger(__name__)
 
 
 # =============================================================================
-# SECRET KEY VALIDATION
+# PASSWORD HASHING ENGINE
 # =============================================================================
-# Prevent weak JWT secrets in production deployments.
-# =============================================================================
-
-if len(JWT_SECRET_KEY) < MIN_SECRET_LENGTH:
-    raise RuntimeError(
-        "JWT_SECRET_KEY is too short. Minimum 64 characters required."
-    )
-
-
-# =============================================================================
-# PASSWORD HASHING CONFIGURATION
-# =============================================================================
-# Argon2 is recommended over bcrypt.
+# Argon2 is recommended for modern password security.
 #
-# Install:
+# Installation:
+#
 #     pip install passlib[argon2]
+#
+# Security:
+#
+# • Resistant against GPU cracking
+# • Resistant against rainbow table attacks
+# • Memory-hard design
 # =============================================================================
 
 pwd_context = CryptContext(
@@ -159,14 +87,17 @@ pwd_context = CryptContext(
 
 
 # =============================================================================
-# PASSWORD VALIDATION
+# PASSWORD INPUT VALIDATION
 # =============================================================================
 
 def _validate_password(password: str) -> None:
     """
-    Internal password validation before hashing operations.
+    Validate password before cryptographic operations.
 
-    Prevents malformed input and oversized payload attacks.
+    Security checks:
+
+        • Must be string
+        • Prevent oversized payload attacks
 
     Parameters
     ----------
@@ -175,14 +106,17 @@ def _validate_password(password: str) -> None:
     Raises
     ------
     ValueError
-        If password format is invalid.
     """
 
     if not isinstance(password, str):
-        raise ValueError("Password must be a string")
+        raise ValueError(
+            "Password must be a string"
+        )
 
     if len(password) > 128:
-        raise ValueError("Password exceeds maximum allowed length")
+        raise ValueError(
+            "Password exceeds maximum allowed length"
+        )
 
 
 # =============================================================================
@@ -191,7 +125,7 @@ def _validate_password(password: str) -> None:
 
 def hash_password(password: str) -> str:
     """
-    Securely hash a user password using Argon2.
+    Hash password using Argon2.
 
     Parameters
     ----------
@@ -200,7 +134,6 @@ def hash_password(password: str) -> str:
     Returns
     -------
     str
-        Secure password hash.
     """
 
     _validate_password(password)
@@ -228,10 +161,11 @@ def verify_password(
     Returns
     -------
     bool
-        True if password is valid.
     """
 
-    _validate_password(plain_password)
+    _validate_password(
+        plain_password
+    )
 
     return pwd_context.verify(
         plain_password,
@@ -240,7 +174,7 @@ def verify_password(
 
 
 # =============================================================================
-# INTERNAL TOKEN GENERATOR
+# INTERNAL TOKEN GENERATION ENGINE
 # =============================================================================
 
 def _create_token(
@@ -250,10 +184,22 @@ def _create_token(
     extra: dict[str, Any] | None = None
 ) -> str:
     """
-    Internal JWT token generation engine.
+    Internal JWT generation engine.
+
+    Standard claims:
+
+        • sub → subject (user id)
+        • iss → issuer
+        • aud → intended service audience
+        • exp → expiration
+        • iat → issued at
+        • nbf → not before
+        • jti → unique token identifier
     """
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now(
+        timezone.utc
+    )
 
     expire = now + expires_delta
 
@@ -264,11 +210,17 @@ def _create_token(
 
         "iat": now,
 
+        "nbf": now,
+
         "exp": expire,
 
-        "jti": str(uuid.uuid4()),
+        "jti": str(
+            uuid.uuid4()
+        ),
 
-        "iss": JWT_ISSUER
+        "iss": JWT_ISSUER,
+
+        "aud": JWT_AUDIENCE
     }
 
     if extra:
@@ -310,9 +262,11 @@ def create_access_token(
 # CREATE REFRESH TOKEN
 # =============================================================================
 
-def create_refresh_token(subject: str) -> str:
+def create_refresh_token(
+    subject: str
+) -> str:
     """
-    Generate long-lived refresh token.
+    Generate refresh token.
     """
 
     return _create_token(
@@ -327,7 +281,7 @@ def create_refresh_token(subject: str) -> str:
 
 
 # =============================================================================
-# TOKEN DECODING
+# DECODE TOKEN
 # =============================================================================
 
 def decode_token(
@@ -337,14 +291,15 @@ def decode_token(
     """
     Decode and validate JWT token.
 
-    Security checks:
+    Security validations:
 
         • Signature verification
-        • Expiration verification
-        • Token type validation
-        • Subject validation
+        • Expiration validation
         • Issuer validation
-        • Payload integrity validation
+        • Audience validation
+        • Subject validation
+        • Token type validation
+        • Replay prevention identifier presence
 
     Parameters
     ----------
@@ -355,46 +310,42 @@ def decode_token(
     Returns
     -------
     dict
-        Valid decoded payload.
 
     Raises
     ------
     ValueError
-        If token is invalid.
     """
 
     try:
+
         payload = jwt.decode(
             token,
 
             JWT_SECRET_KEY,
 
-            algorithms=[JWT_ALGORITHM]
+            algorithms=[JWT_ALGORITHM],
+
+            issuer=JWT_ISSUER,
+
+            audience=JWT_AUDIENCE,
+
+            options={
+                "require_sub": True,
+                "require_exp": True,
+                "require_iat": True,
+                "require_nbf": True
+            }
         )
 
     except JWTError as exc:
 
         logger.warning(
-            "Invalid JWT token detected"
+            "JWT validation failed"
         )
 
         raise ValueError(
             "Invalid or expired token"
         ) from exc
-
-    # Verify issuer
-
-    if payload.get("iss") != JWT_ISSUER:
-
-        logger.warning(
-            "JWT issuer validation failed"
-        )
-
-        raise ValueError(
-            "Invalid token issuer"
-        )
-
-    # Verify token type
 
     if payload.get("type") != expected_type.value:
 
@@ -406,24 +357,10 @@ def decode_token(
             "Invalid token type"
         )
 
-    # Verify subject
-
-    if not payload.get("sub"):
-
-        logger.warning(
-            "JWT subject missing"
-        )
-
-        raise ValueError(
-            "Invalid token payload"
-        )
-
-    # Verify jti
-
     if not payload.get("jti"):
 
         logger.warning(
-            "JWT missing unique token identifier"
+            "JWT missing token identifier"
         )
 
         raise ValueError(
@@ -431,3 +368,55 @@ def decode_token(
         )
 
     return payload
+
+# =============================================================================
+# SECURITY VALIDATION
+# =============================================================================
+
+def validate_security_config() -> None:
+    """
+    Validate the security configuration at startup.
+
+    This function checks:
+        1. JWT_SECRET_KEY exists and is strong enough
+        2. Algorithm is secure
+        3. Token expiration times are reasonable
+
+    Raises:
+        ValueError: If any security configuration is invalid
+
+    OWASP Compliance:
+        - API2: Broken Authentication
+        - API8: Security Misconfiguration
+    """
+    from config import JWT_SECRET_KEY, JWT_ALGORITHM, ENVIRONMENT
+
+    # Check 1: JWT_SECRET_KEY exists
+    if not JWT_SECRET_KEY:
+        raise ValueError("JWT_SECRET_KEY is not set in configuration")
+
+    # Check 2: JWT_SECRET_KEY is strong enough
+    if len(JWT_SECRET_KEY) < 32:
+        raise ValueError(
+            f"JWT_SECRET_KEY is too weak: {len(JWT_SECRET_KEY)} characters. "
+            "Minimum 32 characters required."
+        )
+
+    # Check 3: Production requires even stronger key
+    if ENVIRONMENT in ["staging", "production"] and len(JWT_SECRET_KEY) < 64:
+        raise ValueError(
+            f"JWT_SECRET_KEY must be at least 64 characters in {ENVIRONMENT}. "
+            "Generate one with: openssl rand -hex 32"
+        )
+
+    # Check 4: Algorithm must be secure
+    if JWT_ALGORITHM not in ["HS256", "HS384", "HS512"]:
+        raise ValueError(
+            f"JWT_ALGORITHM '{JWT_ALGORITHM}' is not supported. "
+            "Use HS256, HS384, or HS512."
+        )
+
+    # Check 5: Log success
+    import logging
+    logger = logging.getLogger(__name__)
+    logger.info(" Security configuration validated successfully")

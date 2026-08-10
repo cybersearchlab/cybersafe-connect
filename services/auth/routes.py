@@ -72,13 +72,12 @@ GET     /me
 
 ================================================================================
 """
-
+from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import APIRouter, Depends
-from sqlalchemy.orm import Session
 
 from dependencies import (
     get_current_user,
-    get_db,
+    get_async_db,
     user_to_dict
 )
 
@@ -105,7 +104,7 @@ from services import (
 # =============================================================================
 
 router = APIRouter(
-    prefix="/auth",
+    #prefix="/auth",
     tags=["Authentication"]
 )
 
@@ -115,9 +114,9 @@ router = APIRouter(
 # =============================================================================
 
 @router.post("/register")
-def register(
+async def register(
     payload: RegisterRequest,
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_async_db)
 ):
     """
     Register a new user account.
@@ -135,7 +134,7 @@ def register(
     dict
     """
 
-    return register_user(
+    return await register_user(
         payload=payload,
         db=db
     )
@@ -146,9 +145,9 @@ def register(
 # =============================================================================
 
 @router.post("/verify-email")
-def verify_email_route(
+async def verify_email_route(
     payload: VerifyEmailRequest,
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_async_db)
 ):
     """
     Verify account ownership using OTP code.
@@ -158,7 +157,7 @@ def verify_email_route(
     dict
     """
 
-    return verify_email(
+    return await verify_email(
         payload=payload,
         db=db
     )
@@ -169,9 +168,9 @@ def verify_email_route(
 # =============================================================================
 
 @router.post("/resend-verification")
-def resend_verification_route(
+async def resend_verification_route(
     payload: ResendVerificationRequest,
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_async_db)
 ):
     """
     Generate and resend new verification code.
@@ -181,7 +180,7 @@ def resend_verification_route(
     dict
     """
 
-    return resend_verification(
+    return await resend_verification(
         payload=payload,
         db=db
     )
@@ -192,9 +191,9 @@ def resend_verification_route(
 # =============================================================================
 
 @router.post("/login")
-def login(
+async def login(
     payload: LoginRequest,
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_async_db)
 ):
     """
     Authenticate user credentials.
@@ -204,7 +203,7 @@ def login(
     dict
     """
 
-    return login_user(
+    return await login_user(
         payload=payload,
         db=db
     )
@@ -215,9 +214,9 @@ def login(
 # =============================================================================
 
 @router.post("/refresh")
-def refresh_token(
+async def refresh_token(
     payload: RefreshTokenRequest,
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_async_db)
 ):
     """
     Generate new access token using refresh token.
@@ -227,7 +226,7 @@ def refresh_token(
     dict
     """
 
-    return refresh_user_token(
+    return await refresh_user_token(
         payload=payload,
         db=db
     )
@@ -238,7 +237,7 @@ def refresh_token(
 # =============================================================================
 
 @router.get("/me")
-def get_me(
+async def get_me(
     current_user: User = Depends(get_current_user)
 ):
     """
