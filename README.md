@@ -47,7 +47,6 @@
 
 ### Installation
 
-    ```bash
     # 1. Clone the repository
     git clone https://github.com/cybersearchlab/cybersafe-connect.git
     cd cybersafe-connect
@@ -61,7 +60,7 @@
     # Edit services/academy/.env
     
 # Run with Docker
-    ```bash
+    ```
     # Development mode - all services
     docker-compose -f docker-compose.dev.yml up --build
 
@@ -72,7 +71,7 @@
     docker-compose -f docker-compose.yml up -d
     
 # Local Development
-    ```bash
+    ```
     # Install dependencies
     cd services/auth
     pip install -r requirements.txt
@@ -85,7 +84,7 @@
       
 # Testing
 ## Test Authentication Flow (curl)
-    ```bash
+    ```
     # 1. Register a new user
     curl -X POST http://localhost:8001/api/v1/auth/register \
       -H "Content-Type: application/json" \
