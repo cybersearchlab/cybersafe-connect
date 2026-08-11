@@ -60,31 +60,28 @@
     # Edit services/academy/.env
     
 # Run with Docker
-    ```
-    # Development mode - all services
+### Development mode - all services
     docker-compose -f docker-compose.dev.yml up --build
 
-    # Development mode - specific service (e.g., Auth)
+### Development mode - specific service (e.g., Auth)
     docker-compose -f docker-compose.dev.yml up --build auth postgres
     
-    # Production mode
+### Production mode
     docker-compose -f docker-compose.yml up -d
     
 # Local Development
-    ```
-    # Install dependencies
+### Install dependencies
     cd services/auth
     pip install -r requirements.txt
     
-    # Run with uvicorn
+### Run with uvicorn
     uvicorn app:app --reload --port 8001
     
-    # Or using Python
+### Or using Python
     python app.py
       
 # Testing
 ## Test Authentication Flow (curl)
-    ```
     # 1. Register a new user
     curl -X POST http://localhost:8001/api/v1/auth/register \
       -H "Content-Type: application/json" \
@@ -120,20 +117,17 @@
     
 # Test with Swagger UI
 ## Open your browser and navigate to:
-
-    ```text
     http://localhost:8001/docs      # Auth Service API
     http://localhost:8006/docs      # Academy Service API
     
 Click "Authorize" and enter:
-    
-    ```text
+
     Bearer YOUR_ACCESS_TOKEN
     
 Then test any endpoint directly from the UI.
 
 # Test with Python
-    ```python
+
     import requests
     
     BASE_URL = "http://localhost:8001/api/v1/auth"
@@ -211,8 +205,7 @@ Academy	8006	Cybersecurity training	🚧 In Progress
 
 ## Environment Variables
 Auth Service - .env
-    
-    ```env
+
     # Application
     ENVIRONMENT=development
     PORT=8001
@@ -290,4 +283,4 @@ MIT © Cybersecurity Research Laboratory (CRL)
 
 Made with ❤️ by the Cybersecurity Research Laboratory (CRL)
 
-</div> ```
+</div>
