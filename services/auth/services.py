@@ -181,11 +181,18 @@ def verify_email(
             detail="Invalid OTP code"
         )
 
-    if (
-        user.verification_expires_at and
-        user.verification_expires_at <
-        datetime.now(timezone.utc)
-    ):
+    # SQLite (used in development) drops timezone info on round-trip: a
+    # value written as UTC-aware (see dependencies.generate_otp) comes back
+    # naive once reloaded from the database, which raises TypeError when
+    # compared directly against an aware datetime.now(timezone.utc). The
+    # column is always written in UTC, so a naive value read back is
+    # treated as UTC here rather than being (incorrectly) interpreted as
+    # local time.
+    expires_at = user.verification_expires_at
+    if expires_at and expires_at.tzinfo is None:
+        expires_at = expires_at.replace(tzinfo=timezone.utc)
+
+    if expires_at and expires_at < datetime.now(timezone.utc):
         raise HTTPException(
             status_code=400,
             detail="OTP expired"
