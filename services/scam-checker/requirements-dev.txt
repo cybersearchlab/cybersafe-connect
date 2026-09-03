@@ -1,0 +1,5 @@
+# Dépendances de développement uniquement — non installées dans l'image
+# Docker de production (voir Dockerfile), pour ne pas alourdir l'image livrée.
+-r requirements.txt
+pytest==9.1.1
+httpx==0.28.1

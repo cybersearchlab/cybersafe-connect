@@ -7,9 +7,6 @@ ENV PYTHONUNBUFFERED=1
 
 RUN apt-get update && apt-get install -y gcc build-essential
 
-RUN addgroup --system appgroup
-RUN adduser --system appuser --ingroup appgroup
-
 RUN mkdir -p /app/data
 
 COPY requirements.txt .
@@ -17,12 +14,6 @@ COPY requirements.txt .
 RUN pip install --upgrade pip
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY . .
-
-RUN chown -R appuser:appgroup /app
-
-USER appuser
-
 EXPOSE 8002
 
-CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8002"]
+CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8002", "--reload"]
