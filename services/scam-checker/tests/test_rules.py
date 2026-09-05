@@ -242,6 +242,78 @@ class TestFuzzySpellingVariants:
 
 
 # =============================================================================
+# ARNAQUE SENTIMENTALE / ROMANCE SCAM (nouvel indicateur, 05/09/2026)
+# =============================================================================
+class TestRomanceScam:
+    def test_customs_parcel_narrative_detected(self):
+        content = "Mon colis bloqué en douane, j'ai besoin que tu payes les frais de dédouanement."
+        motifs = _motifs(content)
+        assert any("sentimentale" in m for m in motifs)
+
+    def test_military_deployment_narrative_detected_english(self):
+        content = "I am on a military mission overseas and cannot travel to meet you."
+        motifs = _motifs(content)
+        assert any("sentimentale" in m for m in motifs)
+
+    def test_gift_card_request_detected(self):
+        content = "Please send me an itunes gift card so I can call you."
+        motifs = _motifs(content)
+        assert any("sentimentale" in m for m in motifs)
+
+    def test_unrelated_message_not_flagged(self):
+        content = "Bonjour, comment vas-tu ? On se voit ce week-end ?"
+        assert not any("sentimentale" in m for m in _motifs(content))
+
+
+# =============================================================================
+# FAUX SUPPORT TECHNIQUE (nouvel indicateur, 05/09/2026)
+# =============================================================================
+class TestTechSupportScam:
+    def test_infected_computer_narrative_detected(self):
+        content = "Votre ordinateur est infecté, contactez le support Microsoft immédiatement."
+        motifs = _motifs(content)
+        assert any("support technique" in m for m in motifs)
+
+    def test_remote_access_tool_mention_detected(self):
+        content = "Please install TeamViewer so we can fix your computer remotely."
+        motifs = _motifs(content)
+        assert any("support technique" in m for m in motifs)
+
+    def test_unrelated_message_not_flagged(self):
+        assert not any("support technique" in m for m in _motifs("Bonjour, comment allez-vous ?"))
+
+
+# =============================================================================
+# DETECTION FLOUE DES MARQUES (extension du mécanisme des fautes, 05/09/2026)
+# =============================================================================
+class TestFuzzyBrandDetection:
+    def test_deformed_brand_detected_as_impersonation(self):
+        # "Ecobnak" ~ "ecobank" (ressemblance ≈ 86 %, sous le seuil générique
+        # mais ce test vérifie surtout la voie de détection, pas le ratio
+        # exact) — utilisons plutôt "Orang" qui dépasse bien 90 %.
+        content = "Ceci est un message officiel de la banque Orang, vérifiez votre compte."
+        motifs = _motifs(content)
+        assert any("identité usurpée" in m for m in motifs)
+
+    def test_exact_brand_still_detected(self):
+        # Non-régression : la détection exacte existante doit continuer de
+        # fonctionner après l'ajout de la voie floue.
+        assert any("identité usurpée" in m for m in _motifs("Message officiel d'Orange."))
+
+    def test_whitelisted_brand_neutralizes_fuzzy_match_too(self):
+        content = "Ceci est un message officiel de la banque Orang, vérifiez votre compte."
+        assert not any(
+            "identité usurpée" in m for m in _motifs(content, brand_whitelisted=True)
+        )
+
+    def test_common_french_word_not_flagged(self):
+        # "organe" et "grange" restent sous le seuil de 90 % de ressemblance
+        # avec "orange" — vérifie l'absence de faux positif sur un mot réel.
+        content = "L'organe judiciaire a rendu sa décision près de la grange."
+        assert not any("identité usurpée" in m for m in _motifs(content))
+
+
+# =============================================================================
 # ANTI DOUBLE-COMPTAGE (raccourcisseur compté une seule fois)
 # =============================================================================
 class TestNoDoubleCounting:

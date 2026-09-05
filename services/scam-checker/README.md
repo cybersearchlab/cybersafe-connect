@@ -24,6 +24,18 @@ langue des motifs et conseils retournés, jamais la détection elle-même
 (bilingue en entrée quel que soit ce paramètre, voir `rules.py`). Sélecteur
 FR/EN visible sur la page `/scam-checker` du frontend.
 
+**Détection approfondie** (05/09/2026) — nouvelles catégories et heuristiques :
+- `rules.py` : **arnaque sentimentale / romance scam** (+30, colis bloqué en
+  douane, mission militaire empêchant une rencontre, demande de carte
+  cadeau — vide de couverture identifié lors du benchmark du 28/08), **faux
+  support technique** (+25, virus/support Microsoft/TeamViewer), et
+  **détection floue des marques** (extension du mécanisme déjà utilisé pour
+  les fautes d'orthographe — ressemblance ≥90 % — aux noms de marque en
+  texte libre, ex. "0range", "Orang").
+- `url_analyzer.py` : **adresse IP utilisée comme domaine** (+20),
+  **piège "@" dans l'URL** (+25, l'hôte réel est celui après le "@"),
+  **extension de domaine gratuite très abusée** (+15, `.tk`/`.ml`/`.ga`/`.cf`).
+
 ## Endpoints
 
 | Endpoint | Méthode | Auth |

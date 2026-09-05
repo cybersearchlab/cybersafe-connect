@@ -108,3 +108,37 @@ class TestLength:
 
     def test_short_url_not_flagged(self):
         assert not any("longueur" in m for m in _motifs("https://orange.cm"))
+
+
+class TestIpAsHost:
+    def test_raw_ipv4_flagged(self):
+        assert any("adresse IP" in m for m in _motifs("http://192.168.1.1/login"))
+
+    def test_ipv4_with_port_flagged(self):
+        assert any("adresse IP" in m for m in _motifs("http://45.33.12.9:8080/verify"))
+
+    def test_domain_name_not_flagged(self):
+        assert not any("adresse IP" in m for m in _motifs("https://orange.cm"))
+
+
+class TestAtSignTrick:
+    def test_userinfo_trick_flagged(self):
+        # Le navigateur contacte réellement "faux-site.com" — "orange.cm"
+        # n'est qu'un nom d'utilisateur ignoré.
+        motifs = _motifs("http://orange.cm@faux-site.com/verify")
+        assert any("trompeuse" in m or "@" in m for m in motifs)
+
+    def test_normal_url_not_flagged(self):
+        motifs = _motifs("https://orange.cm/promo")
+        assert not any("trompeuse" in m for m in motifs)
+
+
+class TestAbusedTld:
+    def test_tk_extension_flagged(self):
+        assert any("extension de domaine" in m for m in _motifs("http://mon-site-promo.tk"))
+
+    def test_ml_extension_flagged(self):
+        assert any("extension de domaine" in m for m in _motifs("http://offre-speciale.ml"))
+
+    def test_common_extension_not_flagged(self):
+        assert not any("extension de domaine" in m for m in _motifs("https://orange.cm"))

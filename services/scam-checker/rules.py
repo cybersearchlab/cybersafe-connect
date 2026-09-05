@@ -86,6 +86,12 @@ BRAND_KEYWORDS = [
     "uba", "bicec", "sgbc", "société générale",
 ]
 
+# Racines de marque (>= 4 lettres, condition de _has_fuzzy_brand_variant)
+# utilisées pour repérer une marque déformée volontairement en texte libre
+# (ex. "0range", "Ecobnak") — "mtn" et "uba" sont trop courtes pour qu'un
+# ratio de ressemblance soit fiable, voir _has_fuzzy_brand_variant.
+BRAND_FUZZY_REFERENCE = ["orange", "afriland", "ecobank", "bicec"]
+
 # =============================================================================
 # INSTITUTIONS OFFICIELLES (indicateur "adresse e-mail hors domaine officiel")
 # =============================================================================
@@ -286,6 +292,50 @@ SPELLING_REFERENCE_WORDS = [
 
 SPELLING_FUZZY_THRESHOLD = 0.90
 
+# =============================================================================
+# ARNAQUE SENTIMENTALE / ROMANCE SCAM (+30 — nouvel indicateur, 05/09/2026)
+# =============================================================================
+# Catégorie documentée comme un vide de couverture régionale lors du
+# benchmark du 28/08/2026 (DénonceTonScammeur — base collaborative dédiée
+# aux romance scams ouest-africains). Plutôt que des phrases génériques de
+# déclaration d'amour (trop fréquentes dans des messages légitimes, risque
+# de faux positif), les mots-clés ciblent les DISPOSITIFS narratifs les plus
+# documentés du schéma : colis bloqué en douane, prétexte d'affectation
+# militaire à l'étranger empêchant toute rencontre en personne, et demande
+# de paiement par carte cadeau (intraçable) — trois signaux rarement
+# présents dans une conversation authentique.
+# =============================================================================
+ROMANCE_SCAM_KEYWORDS = [
+    "colis bloqué en douane", "colis bloqué à la douane", "colis bloque en douane",
+    "frais de dédouanement", "frais de douanement",
+    "parcel stuck at customs", "package stuck in customs", "customs clearance fee",
+    "en mission militaire à l'étranger", "en mission militaire a l'etranger",
+    "on a military mission", "deployed overseas",
+    "je ne peux pas venir moi-même", "je ne peux pas venir moi-meme",
+    "i cannot travel to meet you", "cannot come to meet you in person",
+    "carte cadeau itunes", "itunes gift card", "google play gift card",
+    "carte cadeau amazon", "amazon gift card",
+]
+
+# =============================================================================
+# FAUX SUPPORT TECHNIQUE (+25 — nouvel indicateur, 05/09/2026)
+# =============================================================================
+# Schéma classique : un message ou un pop-up prétend qu'un virus a été
+# détecté et pousse la victime à appeler un numéro ou installer un logiciel
+# de prise en main à distance (TeamViewer, AnyDesk) — jamais couvert par le
+# barème d'origine, qui ne visait que les arnaques financières directes.
+# =============================================================================
+TECH_SUPPORT_KEYWORDS = [
+    "votre ordinateur est infecté", "votre ordinateur est infecte",
+    "your computer is infected", "virus détecté sur votre appareil",
+    "virus detecte sur votre appareil", "virus detected on your device",
+    "support microsoft", "microsoft support", "windows support",
+    "n'éteignez pas votre ordinateur", "n'eteignez pas votre ordinateur",
+    "do not turn off your computer", "accès à distance à votre ordinateur",
+    "acces a distance a votre ordinateur", "remote access to your computer",
+    "teamviewer", "anydesk",
+]
+
 # Un mot de moins de 4 lettres rend le ratio de ressemblance peu significatif
 # (ex. "le" vs "la" seraient déjà à 50 % de similarité pour 2 caractères) —
 # exclu de la comparaison.
@@ -308,6 +358,26 @@ def _has_fuzzy_keyword_variant(text_lower: str) -> bool:
     words = {_strip_accents(w) for w in _WORD_PATTERN.findall(text_lower)}
     for word in words:
         for reference in SPELLING_REFERENCE_WORDS:
+            if word == reference:
+                continue
+            ratio = SequenceMatcher(None, word, reference).ratio()
+            if ratio >= SPELLING_FUZZY_THRESHOLD:
+                return True
+    return False
+
+
+def _has_fuzzy_brand_variant(text_lower: str) -> bool:
+    """
+    Même principe que _has_fuzzy_keyword_variant, appliqué à BRAND_FUZZY_REFERENCE
+    plutôt qu'aux mots-clés génériques — repère une marque volontairement
+    déformée en texte libre (ex. "0range", "Ecobnak") pour échapper à la
+    comparaison exacte de BRAND_KEYWORDS. Vérifié à ce seuil (0.90) contre des
+    mots français courants (ex. "organe", "grange" restent sous 0.90) pour
+    limiter le risque de faux positif.
+    """
+    words = {_strip_accents(w) for w in _WORD_PATTERN.findall(text_lower)}
+    for word in words:
+        for reference in BRAND_FUZZY_REFERENCE:
             if word == reference:
                 continue
             ratio = SequenceMatcher(None, word, reference).ratio()
@@ -366,7 +436,13 @@ def evaluate_text(content: str, brand_whitelisted: bool) -> list[RuleMatch]:
         matches.append(RuleMatch("demande d'argent", 30))
 
     # --- Identité usurpée (neutralisée si liste blanche) -------------------
-    if not brand_whitelisted and _contains_any(text_lower, BRAND_KEYWORDS):
+    # Marque mentionnée exactement (BRAND_KEYWORDS) OU sous une forme
+    # volontairement déformée pour échapper à la comparaison exacte
+    # (_has_fuzzy_brand_variant, ex. "0range") — un seul motif, quelle que
+    # soit la voie de détection.
+    if not brand_whitelisted and (
+        _contains_any(text_lower, BRAND_KEYWORDS) or _has_fuzzy_brand_variant(text_lower)
+    ):
         matches.append(RuleMatch("identité usurpée", 30))
 
     # --- Promesse de gains irréalistes, + bonus montant chiffré ------------
@@ -398,6 +474,14 @@ def evaluate_text(content: str, brand_whitelisted: bool) -> list[RuleMatch]:
     # --- Faux remboursement mobile money (nouvel indicateur, 28/08/2026) -----
     if _contains_any(text_lower, MOBILE_MONEY_REFUND_KEYWORDS):
         matches.append(RuleMatch("faux remboursement mobile money", 30))
+
+    # --- Arnaque sentimentale / romance scam (nouvel indicateur, 05/09/2026) -
+    if _contains_any(text_lower, ROMANCE_SCAM_KEYWORDS):
+        matches.append(RuleMatch("arnaque sentimentale (romance scam)", 30))
+
+    # --- Faux support technique (nouvel indicateur, 05/09/2026) --------------
+    if _contains_any(text_lower, TECH_SUPPORT_KEYWORDS):
+        matches.append(RuleMatch("faux support technique", 25))
 
     # --- Offre trop belle ----------------------------------------------------
     if _contains_any(text_lower, OFFER_TOO_GOOD_KEYWORDS):

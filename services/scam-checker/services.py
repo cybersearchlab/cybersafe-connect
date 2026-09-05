@@ -180,6 +180,42 @@ CONSEILS_BY_MOTIF = {
         "en": "Check that the sender is using the official domain of the "
              "institution named (e.g. .gov.cm).",
     },
+    "arnaque sentimentale": {
+        "fr": "Une personne rencontrée en ligne qui ne peut jamais vous "
+             "rencontrer en personne et demande de l'argent (colis bloqué, "
+             "mission à l'étranger, carte cadeau...) est presque toujours "
+             "une arnaque sentimentale.",
+        "en": "Someone you met online who can never meet you in person and "
+             "asks for money (a stuck parcel, an overseas deployment, a "
+             "gift card...) is almost always a romance scam.",
+    },
+    "support technique": {
+        "fr": "Aucune entreprise sérieuse ne vous contacte pour signaler un "
+             "virus sur votre appareil. Ne rappelez pas, n'installez aucun "
+             "logiciel de prise en main à distance.",
+        "en": "No legitimate company contacts you to report a virus on your "
+             "device. Do not call back, and never install remote-access "
+             "software at their request.",
+    },
+    "adresse IP": {
+        "fr": "Un lien qui pointe vers une adresse IP plutôt qu'un nom de "
+             "domaine est presque toujours suspect pour une communication "
+             "grand public.",
+        "en": "A link pointing to a raw IP address instead of a domain name "
+             "is almost always suspicious for a public-facing communication.",
+    },
+    "trompeuse": {
+        "fr": "Ce lien contient un symbole « @ » qui masque le véritable "
+             "site de destination — ne lui faites pas confiance.",
+        "en": "This link contains an \"@\" symbol that hides the real "
+             "destination site — do not trust it.",
+    },
+    "extension de domaine": {
+        "fr": "Cette extension de domaine est très souvent utilisée pour des "
+             "sites frauduleux en raison de son enregistrement gratuit.",
+        "en": "This domain extension is very often used for fraudulent "
+             "sites because it can be registered for free.",
+    },
 }
 
 # Conseil générique ajouté systématiquement, en complément des conseils
@@ -235,18 +271,27 @@ MOTIF_TRANSLATIONS_EN = {
     "longueur/complexité anormale du lien": "abnormal link length/complexity",
     "Élément confirmé en liste noire": "Element confirmed on the blacklist",
     "Aucun indicateur suspect détecté": "No suspicious indicator detected",
+    "arnaque sentimentale (romance scam)": "romance scam",
+    "faux support technique": "fake tech support",
+    "adresse IP utilisée comme domaine": "IP address used as domain",
+    "adresse trompeuse (symbole @ dans l'URL)": "deceptive address (@ symbol in URL)",
 }
 
 _TYPOSQUATTING_PREFIX_FR = "typosquatting probable de "
 _TYPOSQUATTING_PREFIX_EN = "probable typosquatting of "
 
+_ABUSED_TLD_PREFIX_FR = "extension de domaine à risque (."
+_ABUSED_TLD_PREFIX_EN = "risky domain extension (."
+
 
 def _translate_motif(motif: str, lang: str) -> str:
     """
     Traduit un motif français vers l'anglais si lang="en", sinon le retourne
-    inchangé. Gère séparément "typosquatting probable de {marque}" (seul
-    motif à contenu dynamique — voir url_analyzer.analyze_url) via un
-    préfixe, plutôt qu'une entrée fixe par marque dans MOTIF_TRANSLATIONS_EN.
+    inchangé. Gère séparément les deux motifs à contenu dynamique —
+    "typosquatting probable de {marque}" et "extension de domaine à risque
+    (.{tld})", tous deux générés par url_analyzer.analyze_url — via un
+    préfixe, plutôt qu'une entrée fixe par valeur possible dans
+    MOTIF_TRANSLATIONS_EN.
     """
     if lang != "en":
         return motif
@@ -254,6 +299,8 @@ def _translate_motif(motif: str, lang: str) -> str:
         return MOTIF_TRANSLATIONS_EN[motif]
     if motif.startswith(_TYPOSQUATTING_PREFIX_FR):
         return _TYPOSQUATTING_PREFIX_EN + motif[len(_TYPOSQUATTING_PREFIX_FR):]
+    if motif.startswith(_ABUSED_TLD_PREFIX_FR):
+        return _ABUSED_TLD_PREFIX_EN + motif[len(_ABUSED_TLD_PREFIX_FR):]
     return motif
 
 

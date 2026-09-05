@@ -139,3 +139,18 @@ class TestScamCheckLanguage:
     def test_invalid_language_rejected(self, client):
         response = client.post("/scam/check", json={"content": "test", "lang": "de"})
         assert response.status_code == 422
+
+    def test_new_categories_translated_to_english(self, client):
+        # Régression : chaque nouveau motif ajouté au barème (05/09/2026) doit
+        # avoir son entrée dans services.MOTIF_TRANSLATIONS_EN, sinon il
+        # ressort tel quel en français même quand lang="en" est demandé.
+        response = client.post(
+            "/scam/check",
+            json={
+                "content": "Votre ordinateur est infecté, contactez le support Microsoft immédiatement.",
+                "lang": "en",
+            },
+        )
+        data = response.json()["data"]
+        assert "fake tech support" in data["motifs"]
+        assert not any("support technique" in m for m in data["motifs"])

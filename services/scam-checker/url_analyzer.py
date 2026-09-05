@@ -14,6 +14,9 @@ ROLE
     • Repérer le typosquatting : un domaine qui imite un nom de marque connu
       avec une orthographe légèrement différente (ex. 0range.cm)
     • Repérer un encodage punycode suspect (attaque homographe IDN)
+    • Repérer une adresse IP utilisée comme nom de domaine
+    • Repérer le piège "@" dans une URL (hôte réel masqué après le "@")
+    • Repérer une extension de domaine gratuite très majoritairement abusée
     • Repérer une longueur/complexité anormale du lien
 
 --------------------------------------------------------------------------------
@@ -57,6 +60,16 @@ KNOWN_BRAND_DOMAINS = [
     "orange.cm", "mtn.cm", "afrilandfirstbank.com", "ecobank.com",
     "ubagroup.com", "bicec.com", "societegenerale.cm", "eneocameroun.com",
 ]
+
+# Détection d'une adresse IPv4 utilisée directement comme hôte (ex.
+# "http://192.168.1.1/login") — une communication légitime destinée au grand
+# public ne pointe jamais vers une IP brute, seulement vers un nom de domaine.
+_IPV4_PATTERN = re.compile(r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$")
+
+# Extensions de domaine gratuites très majoritairement associées à des campagnes
+# d'abus (phishing, spam) faute de coût d'enregistrement — un signal faible pris
+# isolément, mais qui a sa place aux côtés des autres heuristiques structurelles.
+_ABUSED_TLDS = {"tk", "ml", "ga", "cf"}
 
 
 # =============================================================================
@@ -180,6 +193,23 @@ def analyze_url(content: str) -> list[RuleMatch]:
     # titre que les autres heuristiques structurelles de ce module.
     if any(label.startswith("xn--") for label in labels):
         matches.append(RuleMatch("encodage punycode suspect (xn--)", 20))
+
+    # --- Adresse IP utilisée comme domaine ------------------------------------
+    if parsed.hostname and _IPV4_PATTERN.match(parsed.hostname):
+        matches.append(RuleMatch("adresse IP utilisée comme domaine", 20))
+
+    # --- Piège "@" dans l'URL ---------------------------------------------------
+    # "http://vrai-site.com@faux-site.com" : tout ce qui précède le "@" est
+    # une simple information d'identification (nom d'utilisateur) pour le
+    # navigateur — l'hôte réel contacté est "faux-site.com", après le "@".
+    # Une communication légitime n'a jamais besoin d'inclure des identifiants
+    # dans l'URL elle-même.
+    if "@" in parsed.netloc:
+        matches.append(RuleMatch("adresse trompeuse (symbole @ dans l'URL)", 25))
+
+    # --- Extension de domaine gratuite très abusée -----------------------------
+    if labels and labels[-1] in _ABUSED_TLDS:
+        matches.append(RuleMatch(f"extension de domaine à risque (.{labels[-1]})", 15))
 
     # --- Longueur / complexité anormale ---------------------------------------
     if len(stripped) > 60:
