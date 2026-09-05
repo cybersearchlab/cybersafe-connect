@@ -55,10 +55,15 @@ littérature académique sur les homoglyphes — voir section suivante) :
   indicatif pour le back-office, ne bloque jamais une confirmation admin.
 
   ⚠️ **Note de migration** : `ip_address` est une nouvelle colonne sur une
-  table déjà existante — un `data/scam_checker.db` créé avant le 05/09/2026
-  doit être migré manuellement (`ALTER TABLE scam_reports ADD COLUMN
-  ip_address VARCHAR(45)`) ou supprimé pour être recréé, ce projet n'ayant
-  pas d'outil de migration (Alembic) à ce stade.
+  table déjà existante — une base créée avant le 05/09/2026 doit être migrée
+  manuellement (`ALTER TABLE scam_reports ADD COLUMN ip_address VARCHAR(45)`)
+  ou supprimée pour être recréée, ce projet n'ayant pas d'outil de migration
+  (Alembic) à ce stade. **En Docker (docker-compose.dev.yml)**, `/app/data`
+  est un volume nommé (`scam_checker_data`), pas le dossier local
+  `services/scam-checker/data/` malgré le montage bind sur `/app` — la
+  commande s'exécute alors *dans le conteneur* :
+  `docker exec -it cybersafe-scam-checker python -c "..."` (même script,
+  chemin `/app/data/scam_checker.db`), pas sur le fichier hôte.
 
 ## Endpoints
 
