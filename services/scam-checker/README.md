@@ -36,6 +36,30 @@ FR/EN visible sur la page `/scam-checker` du frontend.
   **piège "@" dans l'URL** (+25, l'hôte réel est celui après le "@"),
   **extension de domaine gratuite très abusée** (+15, `.tk`/`.ml`/`.ga`/`.cf`).
 
+**Détection avancée du typosquatting + anti-brigading** (05/09/2026, suite à
+une recherche technique sur le fonctionnement interne de Google Safe
+Browsing, PhishTank, Truecaller, ScamAdviser, Community Notes et la
+littérature académique sur les homoglyphes — voir section suivante) :
+- `url_analyzer.py` : **squelette visuel** (`_domain_skeleton`) — un domaine
+  imitant une marque via des homoglyphes cyrilliques/grecs (ex. "есоbank"
+  avec des lettres cyrilliques) ou des substitutions visuelles multi-
+  caractères ("rn"→"m") est détecté même quand la distance de Levenshtein
+  seule (3+ caractères différents) ne suffit plus. Un seul motif par marque,
+  jamais de double comptage avec le typosquatting existant.
+- `services.py` / `models.py` : **pondération anti-brigading** des
+  signalements, inspirée de Truecaller — l'adresse IP de chaque signalement
+  est capturée (`ScamReport.ip_address`, jamais exposée publiquement, seul
+  le nombre d'IP distinctes sort de l'API) pour détecter qu'une entrée n'est
+  signalée que depuis une seule origine (`low_diversity_suspected`), un
+  signal complémentaire à l'étalement temporel déjà en place — purement
+  indicatif pour le back-office, ne bloque jamais une confirmation admin.
+
+  ⚠️ **Note de migration** : `ip_address` est une nouvelle colonne sur une
+  table déjà existante — un `data/scam_checker.db` créé avant le 05/09/2026
+  doit être migré manuellement (`ALTER TABLE scam_reports ADD COLUMN
+  ip_address VARCHAR(45)`) ou supprimé pour être recréé, ce projet n'ayant
+  pas d'outil de migration (Alembic) à ce stade.
+
 ## Endpoints
 
 | Endpoint | Méthode | Auth |

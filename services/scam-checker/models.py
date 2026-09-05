@@ -166,6 +166,13 @@ class WhitelistEntry(Base):
 #     reporter_user_id        Identifiant de l'utilisateur signalant (issu du
 #                             token JWT du module auth — pas de table users
 #                             locale, ce service ne fait que stocker l'id)
+#     ip_address                Adresse IP de la requête de signalement — sert
+#                             UNIQUEMENT à calculer un signal de diversité
+#                             anti-brigading pour la file d'attente admin
+#                             (services.get_report_spread), jamais exposée
+#                             publiquement ni même à l'admin en clair (voir
+#                             routes.py, seul le nombre d'IP distinctes sort
+#                             de l'API) — benchmark du 05/09/2026 (Truecaller)
 #     created_at                Date du signalement
 # =============================================================================
 class ScamReport(Base):
@@ -175,6 +182,10 @@ class ScamReport(Base):
 
     entry_id = Column(Integer, ForeignKey("blacklist_entries.id"), nullable=False)
     reporter_user_id = Column(Integer, nullable=False, index=True)
+    # Nullable : une base existante avant cette colonne (05/09/2026) garde des
+    # lignes sans IP connue — traitées comme "diversité inconnue", jamais
+    # comptées comme suspectes par défaut (voir services.get_report_spread).
+    ip_address = Column(String(45), nullable=True)  # 45 = longueur max IPv6
 
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 

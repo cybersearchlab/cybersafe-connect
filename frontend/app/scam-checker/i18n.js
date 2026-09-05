@@ -130,6 +130,9 @@ export const T = {
     adminBurstBadge: "⚠️ rafale suspecte",
     adminBurstTitle: (count, minutes) =>
       `${count} signalements en moins de ${minutes} min — possible coordination, à examiner avec prudence.`,
+    adminLowDiversityBadge: "⚠️ même origine",
+    adminLowDiversityTitle: () =>
+      "Tous les signalements proviennent de la même adresse IP — possible manipulation par un seul acteur, à examiner avec prudence.",
   },
 
   en: {
@@ -242,6 +245,9 @@ export const T = {
     adminBurstBadge: "⚠️ suspicious burst",
     adminBurstTitle: (count, minutes) =>
       `${count} reports in under ${minutes} min — possible coordination, review with caution.`,
+    adminLowDiversityBadge: "⚠️ same origin",
+    adminLowDiversityTitle: () =>
+      "All reports come from the same IP address — possible manipulation by a single actor, review with caution.",
   },
 };
 

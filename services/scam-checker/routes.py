@@ -58,6 +58,7 @@ from datetime import datetime
 
 from fastapi import APIRouter, Depends, File, Request, UploadFile
 from fastapi.responses import FileResponse
+from slowapi.util import get_remote_address
 from sqlalchemy.orm import Session
 
 from config import MAX_TEXT_LENGTH, RATE_LIMIT_CHECK, RATE_LIMIT_REPORT
@@ -127,7 +128,7 @@ def report(
     """Nécessite un compte connecté — get_current_user lève une 401 sinon."""
     return report_entry(
         db, payload.type, payload.value, current_user.user_id, current_user.email,
-        payload.description,
+        payload.description, get_remote_address(request),
     )
 
 
@@ -195,14 +196,20 @@ def admin_list_entries(
 
     sort=reports trie par nombre de signalements décroissant plutôt que par
     date de modification — priorise la revue des entrées les plus
-    corroborées. Chaque entrée porte aussi report_spread_minutes et
-    coordinated_pattern_suspected (voir services.get_report_spread) : un
-    signal d'aide à la décision, jamais une confirmation ou un rejet
-    automatique.
+    corroborées. Chaque entrée porte aussi report_spread_minutes/
+    coordinated_pattern_suspected et distinct_ip_count/low_diversity_suspected
+    (voir services.get_report_spread) : deux signaux d'aide à la décision,
+    jamais une confirmation ou un rejet automatique.
     """
     entries = get_all_entries(db, status, type, since, sort, limit)
     spread = get_report_spread(db, [e.id for e in entries])
     reasons = get_admin_reasons(db, entries)
+    default_spread = {
+        "report_spread_minutes": 0.0,
+        "coordinated_pattern_suspected": False,
+        "distinct_ip_count": 0,
+        "low_diversity_suspected": False,
+    }
     return {
         "success": True,
         "message": "Entrées de la liste noire",
@@ -216,9 +223,7 @@ def admin_list_entries(
                 "description": e.description,
                 "admin_reason": reasons.get((e.type, e.value)),
                 "updated_at": e.updated_at.isoformat(),
-                **spread.get(
-                    e.id, {"report_spread_minutes": 0.0, "coordinated_pattern_suspected": False}
-                ),
+                **spread.get(e.id, default_spread),
             }
             for e in entries
         ],

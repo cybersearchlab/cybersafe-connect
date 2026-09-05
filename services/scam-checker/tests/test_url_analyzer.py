@@ -11,7 +11,7 @@ suffixe (ex. "0range-securite.cm").
 ================================================================================
 """
 
-from url_analyzer import analyze_url, is_url
+from url_analyzer import _domain_skeleton, analyze_url, is_url
 
 
 def _motifs(url: str) -> list[str]:
@@ -78,6 +78,46 @@ class TestPunycode:
 
     def test_ascii_domain_not_flagged(self):
         assert not any("punycode" in m for m in _motifs("https://orange.cm"))
+
+
+class TestHomoglyphSkeleton:
+    # Ajouté suite à la recherche technique du 05/09/2026 sur les mécanismes
+    # de détection de typosquatting au-delà de Levenshtein (voir README).
+    def test_single_homoglyph_still_caught_by_typosquatting(self):
+        # Régression : une seule substitution homoglyphe reste couverte par
+        # la distance de Levenshtein existante (distance 1) — le squelette
+        # visuel ne doit rien changer à ce cas déjà géré.
+        motifs = _motifs("http://оrange.cm")  # "о" cyrillique U+043E
+        assert any("typosquatting probable de orange.cm" in m for m in motifs)
+
+    def test_multi_homoglyph_caught_only_via_skeleton(self):
+        # 3 substitutions cyrilliques (е, с, о) -> distance de Levenshtein
+        # = 3, hors de portée du seuil ≤2 existant. Seul le squelette visuel
+        # détecte que "есоbank" est indiscernable de "ecobank" à l'œil.
+        motifs = _motifs("http://есоbank.cm")
+        assert any("usurpation visuelle (homoglyphes) probable de ecobank.com" in m for m in motifs)
+
+    def test_no_double_counting_for_single_homoglyph(self):
+        # Un seul motif de marque, jamais deux, même si la distance ET le
+        # squelette matchent tous les deux (cas d'une seule substitution).
+        motifs = _motifs("http://оrange.cm")
+        brand_motifs = [m for m in motifs if "orange.cm" in m and ("typosquatting" in m or "visuelle" in m)]
+        assert len(brand_motifs) == 1
+
+    def test_visual_bigram_substitution_normalizes_identically(self):
+        # "rn" et "m" doivent produire le même squelette — mécanisme testé
+        # directement, aucune marque connue du projet ne contenant ce motif
+        # de façon exploitable de bout en bout.
+        assert _domain_skeleton("rnicrosoft") == _domain_skeleton("microsoft")
+
+    def test_legitimate_domain_not_flagged(self):
+        motifs = _motifs("https://orange.cm")
+        assert not any("visuelle" in m or "typosquatting" in m for m in motifs)
+
+    def test_unrelated_domain_not_flagged_by_skeleton(self):
+        # Un domaine réellement différent ne doit jamais matcher par hasard.
+        motifs = _motifs("https://wikipedia.org")
+        assert not any("visuelle" in m or "typosquatting" in m for m in motifs)
 
 
 class TestHttpsCheck:

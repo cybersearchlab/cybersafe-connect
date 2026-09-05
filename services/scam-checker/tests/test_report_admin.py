@@ -37,6 +37,25 @@ def _set_report_times(entry_id: int, timestamps: list[datetime]) -> None:
         db.commit()
 
 
+def _set_report_ips(entry_id: int, ips: list[str]) -> None:
+    """
+    Force les adresses IP des signalements d'une entrée — le TestClient
+    utilisant une adresse factice fixe ("testclient") pour tous les appels,
+    ce helper est nécessaire pour tester la diversité des IP (services.
+    get_report_spread) sans dépendre d'un vrai réseau multi-origine.
+    """
+    with database.SessionLocal() as db:
+        reports = (
+            db.query(ScamReport)
+            .filter(ScamReport.entry_id == entry_id)
+            .order_by(ScamReport.id)
+            .all()
+        )
+        for report, ip in zip(reports, ips):
+            report.ip_address = ip
+        db.commit()
+
+
 class TestReportRequiresAuth:
     def test_report_without_token_rejected(self, client):
         response = client.post("/scam/report", json={"type": "phone", "value": PHONE})
@@ -412,6 +431,76 @@ class TestReportSpreadDiversity:
         response = client.post(
             "/scam/admin/confirm",
             json={"type": "phone", "value": PHONE, "reason": "Vérifié malgré la rafale"},
+            headers=admin,
+        )
+        assert response.status_code == 200
+
+
+class TestReportIpDiversity:
+    # Pondération anti-brigading (benchmark 05/09/2026, inspiré de
+    # Truecaller) — un signal complémentaire à l'étalement temporel : un même
+    # acteur signalant depuis plusieurs comptes mais une seule connexion,
+    # même étalé dans le temps, reste invisible à l'analyse temporelle seule.
+    def _report(self, client, auth_headers, uid):
+        client.post(
+            "/scam/report",
+            json={"type": "phone", "value": PHONE},
+            headers=auth_headers(user_id=uid, email=f"u{uid}@test.cm"),
+        )
+
+    def test_reports_from_same_ip_flagged_low_diversity(self, client, auth_headers):
+        admin = auth_headers(role="admin", email="admin@test.cm")
+        for uid in range(1, 4):
+            self._report(client, auth_headers, uid)
+
+        entry_id = client.get("/scam/admin/entries", headers=admin).json()["data"][0]["id"]
+        _set_report_ips(entry_id, ["41.202.1.10", "41.202.1.10", "41.202.1.10"])
+
+        response = client.get("/scam/admin/entries", headers=admin)
+        entry = next(e for e in response.json()["data"] if e["id"] == entry_id)
+        assert entry["distinct_ip_count"] == 1
+        assert entry["low_diversity_suspected"] is True
+
+    def test_reports_from_distinct_ips_not_flagged(self, client, auth_headers):
+        admin = auth_headers(role="admin", email="admin@test.cm")
+        for uid in range(1, 4):
+            self._report(client, auth_headers, uid)
+
+        entry_id = client.get("/scam/admin/entries", headers=admin).json()["data"][0]["id"]
+        _set_report_ips(entry_id, ["41.202.1.10", "196.24.3.5", "102.65.10.20"])
+
+        response = client.get("/scam/admin/entries", headers=admin)
+        entry = next(e for e in response.json()["data"] if e["id"] == entry_id)
+        assert entry["distinct_ip_count"] == 3
+        assert entry["low_diversity_suspected"] is False
+
+    def test_unknown_ip_not_treated_as_suspicious(self, client, auth_headers):
+        # Signalements sans IP connue (ip_address=None — ex. données
+        # antérieures à cette colonne) — ne doit jamais être traité comme
+        # "diversité faible" faute de donnée, seul un décompte confirmé à 1
+        # déclenche ce signal (voir services.get_report_spread).
+        admin = auth_headers(role="admin", email="admin@test.cm")
+        for uid in range(1, 4):
+            self._report(client, auth_headers, uid)
+
+        entry_id = client.get("/scam/admin/entries", headers=admin).json()["data"][0]["id"]
+        _set_report_ips(entry_id, [None, None, None])
+
+        response = client.get("/scam/admin/entries", headers=admin)
+        entry = next(e for e in response.json()["data"] if e["id"] == entry_id)
+        assert entry["distinct_ip_count"] == 0
+        assert entry["low_diversity_suspected"] is False
+
+    def test_low_diversity_flag_never_blocks_confirmation(self, client, auth_headers):
+        admin = auth_headers(role="admin", email="admin@test.cm")
+        for uid in range(1, 4):
+            self._report(client, auth_headers, uid)
+        entry_id = client.get("/scam/admin/entries", headers=admin).json()["data"][0]["id"]
+        _set_report_ips(entry_id, ["41.202.1.10", "41.202.1.10", "41.202.1.10"])
+
+        response = client.post(
+            "/scam/admin/confirm",
+            json={"type": "phone", "value": PHONE, "reason": "Vérifié malgré la diversité faible"},
             headers=admin,
         )
         assert response.status_code == 200

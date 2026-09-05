@@ -12,7 +12,10 @@ ROLE
 --------------------------------------------------------------------------------
     • Repérer les liens raccourcis, sous-domaines suspects, absence de HTTPS
     • Repérer le typosquatting : un domaine qui imite un nom de marque connu
-      avec une orthographe légèrement différente (ex. 0range.cm)
+      avec une orthographe légèrement différente (ex. 0range.cm), y compris
+      par usurpation visuelle pure (homoglyphes cyrilliques/grecs,
+      substitutions "rn"→"m") quand la distance de Levenshtein seule ne
+      suffit plus (voir _domain_skeleton)
     • Repérer un encodage punycode suspect (attaque homographe IDN)
     • Repérer une adresse IP utilisée comme nom de domaine
     • Repérer le piège "@" dans une URL (hôte réel masqué après le "@")
@@ -41,6 +44,7 @@ attribuer deux fois des points au même indicateur.
 """
 
 import re
+import unicodedata
 from urllib.parse import urlparse
 
 from rules import LINK_SHORTENERS, RuleMatch
@@ -70,6 +74,66 @@ _IPV4_PATTERN = re.compile(r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$")
 # d'abus (phishing, spam) faute de coût d'enregistrement — un signal faible pris
 # isolément, mais qui a sa place aux côtés des autres heuristiques structurelles.
 _ABUSED_TLDS = {"tk", "ml", "ga", "cf"}
+
+# =============================================================================
+# HOMOGLYPHES — SOUS-ENSEMBLE CURATÉ, PAS LA TABLE UNICODE COMPLETE
+# =============================================================================
+# La comparaison de typosquatting par distance de Levenshtein (ci-dessous)
+# traite une substitution homoglyphe (ex. "о" cyrillique U+043E à la place de
+# "o" latin) comme n'importe quelle autre substitution de caractère — elle la
+# détecte donc déjà quand 1 ou 2 caractères sont remplacés. Sa limite : au-delà
+# de 2 substitutions, la distance dépasse le seuil et le domaine échappe à la
+# détection, alors qu'il reste visuellement IDENTIQUE à l'œil d'un citoyen.
+#
+# Cette table ne reprend pas les ~6 565 entrées de confusables.txt (Unicode
+# Consortium, UTS #39) — la grande majorité concerne des scripts (CJK, etc.)
+# sans rapport avec les attaques réellement observées contre ce projet.
+# Sous-ensemble volontairement restreint aux lettres cyrilliques et grecques
+# les plus couramment utilisées pour usurper un domaine latin.
+_CONFUSABLES = {
+    # Cyrillique → latin
+    "а": "a", "е": "e", "о": "o", "р": "p", "с": "c", "у": "y",
+    "х": "x", "і": "i", "ѕ": "s", "ј": "j",
+    # Grec → latin
+    "α": "a", "ο": "o", "ρ": "p", "υ": "y",
+}
+
+# Substitutions visuelles à plusieurs caractères (une paire de lettres qui,
+# affichée dans une police standard, se confond avec une seule autre lettre) —
+# un angle mort différent des homoglyphes Unicode ci-dessus : ici, les
+# caractères sont d'authentiques lettres latines ASCII, donc indétectables à
+# la fois par la comparaison Unicode ET par Levenshtein simple, qui compterait
+# le remplacement de 2 caractères par 1 comme 2 opérations coûteuses (souvent
+# hors du seuil de distance ≤ 2 dès qu'un autre caractère diffère par ailleurs).
+# Cas réel documenté : "rnicrosoft.com" pour usurper "microsoft.com".
+_VISUAL_SUBSTITUTIONS = [("rn", "m"), ("vv", "w"), ("cl", "d")]
+
+
+def _domain_skeleton(value: str) -> str:
+    """
+    Réduit une chaîne à sa forme visuelle "canonique" : applique les
+    substitutions visuelles multi-caractères, résout chaque caractère
+    restant vers son prototype latin le plus proche via _CONFUSABLES (en
+    suivant les chaînes de correspondance jusqu'à un point fixe), puis
+    normalise en NFD. Deux domaines dont le squelette est identique sont
+    visuellement indiscernables, quel que soit le nombre de caractères
+    concernés — contrairement à la distance de Levenshtein, plafonnée à un
+    petit nombre de substitutions pour rester fiable.
+    """
+    normalized = value
+    for pattern, replacement in _VISUAL_SUBSTITUTIONS:
+        normalized = normalized.replace(pattern, replacement)
+
+    resolved = []
+    for char in normalized:
+        prototype = char
+        seen: set[str] = set()
+        while prototype in _CONFUSABLES and prototype not in seen:
+            seen.add(prototype)
+            prototype = _CONFUSABLES[prototype]
+        resolved.append(prototype)
+
+    return unicodedata.normalize("NFD", "".join(resolved))
 
 
 # =============================================================================
@@ -174,10 +238,27 @@ def analyze_url(content: str) -> list[RuleMatch]:
                 # correctif).
                 prefix_distance = _levenshtein(domain_root[:len(brand_root)], brand_root)
                 distance = min(full_distance, prefix_distance)
-                if 0 < distance <= 2:
-                    matches.append(RuleMatch(
-                        f"typosquatting probable de {brand_domain}", 25
-                    ))
+
+                # Comparaison par squelette visuel (05/09/2026) : détecte les
+                # cas où le domaine reste visuellement IDENTIQUE à la marque
+                # (homoglyphes cyrilliques/grecs, substitutions "rn"→"m"...)
+                # même quand ces caractères multiplient la distance de
+                # Levenshtein au-delà du seuil ≤2 — voir _domain_skeleton.
+                skeleton_match = _domain_skeleton(domain_root) == _domain_skeleton(brand_root)
+
+                if 0 < distance <= 2 or skeleton_match:
+                    # Un seul motif par marque, jamais les deux : un
+                    # remplacement homoglyphe unique (ex. "оrange.cm") est
+                    # déjà couvert par la distance de Levenshtein (distance 1)
+                    # — le squelette visuel n'apporte une détection VRAIMENT
+                    # nouvelle que pour les cas à 3+ substitutions restant
+                    # hors de portée de Levenshtein seul.
+                    label = (
+                        "usurpation visuelle (homoglyphes) probable de"
+                        if skeleton_match and distance > 2
+                        else "typosquatting probable de"
+                    )
+                    matches.append(RuleMatch(f"{label} {brand_domain}", 25))
                     break
 
     # --- Encodage punycode suspect (attaque homographe IDN) -------------------

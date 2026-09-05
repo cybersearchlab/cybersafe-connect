@@ -125,6 +125,11 @@ function EntryRow({ entry, expanded, onToggle, onResolved, t }) {
               {t.adminBurstBadge}
             </span>
           )}
+          {entry.low_diversity_suspected && (
+            <span className="entry-burst-flag" title={t.adminLowDiversityTitle(entry.distinct_ip_count)}>
+              {t.adminLowDiversityBadge}
+            </span>
+          )}
         </td>
         <td className="entry-reason-cell">{entry.admin_reason || t.reasonNotProvided}</td>
         <td>{new Date(entry.updated_at).toLocaleString(locale)}</td>

@@ -155,6 +155,14 @@ CONSEILS_BY_MOTIF = {
         "en": "This domain imitates a known brand name with slightly "
              "different spelling — do not trust it.",
     },
+    "usurpation visuelle": {
+        "fr": "Ce domaine utilise des caractères qui ressemblent visuellement "
+             "à ceux d'une marque connue mais n'en font pas partie — tapez "
+             "l'adresse officielle vous-même plutôt que de suivre ce lien.",
+        "en": "This domain uses characters that look like those of a known "
+             "brand but are not part of it — type the official address "
+             "yourself rather than following this link.",
+    },
     "punycode": {
         "fr": "Ce lien utilise un encodage international qui peut cacher "
              "des caractères visuellement identiques à ceux d'une marque "
@@ -283,15 +291,16 @@ _TYPOSQUATTING_PREFIX_EN = "probable typosquatting of "
 _ABUSED_TLD_PREFIX_FR = "extension de domaine à risque (."
 _ABUSED_TLD_PREFIX_EN = "risky domain extension (."
 
+_HOMOGLYPH_PREFIX_FR = "usurpation visuelle (homoglyphes) probable de "
+_HOMOGLYPH_PREFIX_EN = "probable visual impersonation (homoglyphs) of "
+
 
 def _translate_motif(motif: str, lang: str) -> str:
     """
     Traduit un motif français vers l'anglais si lang="en", sinon le retourne
-    inchangé. Gère séparément les deux motifs à contenu dynamique —
-    "typosquatting probable de {marque}" et "extension de domaine à risque
-    (.{tld})", tous deux générés par url_analyzer.analyze_url — via un
-    préfixe, plutôt qu'une entrée fixe par valeur possible dans
-    MOTIF_TRANSLATIONS_EN.
+    inchangé. Gère séparément les motifs à contenu dynamique — variantes de
+    marque ou de TLD générées par url_analyzer.analyze_url — via un préfixe,
+    plutôt qu'une entrée fixe par valeur possible dans MOTIF_TRANSLATIONS_EN.
     """
     if lang != "en":
         return motif
@@ -301,6 +310,8 @@ def _translate_motif(motif: str, lang: str) -> str:
         return _TYPOSQUATTING_PREFIX_EN + motif[len(_TYPOSQUATTING_PREFIX_FR):]
     if motif.startswith(_ABUSED_TLD_PREFIX_FR):
         return _ABUSED_TLD_PREFIX_EN + motif[len(_ABUSED_TLD_PREFIX_FR):]
+    if motif.startswith(_HOMOGLYPH_PREFIX_FR):
+        return _HOMOGLYPH_PREFIX_EN + motif[len(_HOMOGLYPH_PREFIX_FR):]
     return motif
 
 
@@ -507,6 +518,7 @@ def report_entry(
     user_id: int,
     user_email: str,
     description: str | None = None,
+    ip_address: str | None = None,
 ) -> dict:
     """
     Enregistre le signalement d'un citoyen connecté pour une entrée donnée.
@@ -528,6 +540,10 @@ def report_entry(
     indépendants — utile à un administrateur pour évaluer la menace avant de
     confirmer, et affiché dans la liste publique des entrées confirmées
     (GET /scam/blacklist) une fois la revue faite.
+
+    ip_address : adresse IP de la requête (optionnel) — sert uniquement au
+    signal anti-brigading de get_report_spread (diversité des IP à l'origine
+    des signalements d'une même entrée), jamais utilisée pour autre chose.
     """
     normalized = normalize_value(entry_type, value)
 
@@ -554,7 +570,7 @@ def report_entry(
             headers={"X-Error-Code": "ALREADY_REPORTED"},
         )
 
-    report = ScamReport(entry_id=entry.id, reporter_user_id=user_id)
+    report = ScamReport(entry_id=entry.id, reporter_user_id=user_id, ip_address=ip_address)
     db.add(report)
     entry.report_count += 1
 
@@ -720,16 +736,28 @@ def get_admin_reasons(db: Session, entries: list[BlacklistEntry]) -> dict[tuple[
 # =============================================================================
 def get_report_spread(db: Session, entry_ids: list[int]) -> dict[int, dict]:
     """
-    Pour chaque entrée demandée, calcule l'écart (en minutes) entre son
-    premier et son dernier signalement, et marque "coordinated_pattern_
-    suspected" quand au moins BURST_MIN_REPORTS signalements sont arrivés en
-    moins de BURST_WINDOW_MINUTES — voir config.py pour la justification
-    complète. Un seul aller-retour base de données pour toute la liste
-    (GROUP BY), plutôt qu'une requête par entrée.
+    Pour chaque entrée demandée, calcule deux signaux de diversité des
+    signalements, indépendants l'un de l'autre :
 
-    Ce signal n'AUTOMATISE rien : il n'est utilisé que pour l'affichage dans
+        • report_spread_minutes / coordinated_pattern_suspected : écart
+          temporel entre premier et dernier signalement — marque une
+          "rafale" quand au moins BURST_MIN_REPORTS signalements arrivent en
+          moins de BURST_WINDOW_MINUTES (voir config.py).
+        • distinct_ip_count / low_diversity_suspected (05/09/2026, benchmark
+          Truecaller) : nombre d'adresses IP distinctes à l'origine des
+          signalements — marque un signal DIFFÉRENT et complémentaire, un
+          même acteur signalant depuis plusieurs comptes mais une seule
+          connexion, même étalé dans le temps (donc invisible à l'analyse
+          temporelle seule).
+
+    Un seul aller-retour base de données pour toute la liste (GROUP BY),
+    plutôt qu'une requête par entrée.
+
+    Ces signaux n'AUTOMATISENT rien : ils ne servent qu'à l'affichage dans
     le back-office (routes.admin_list_entries), à charge de l'administrateur
-    d'en tenir compte ou non avant de confirmer/rejeter.
+    d'en tenir compte ou non avant de confirmer/rejeter. distinct_ip_count
+    est le seul détail exposé côté IP — jamais les adresses IP elles-mêmes
+    (voir models.ScamReport, note sur ip_address).
     """
     if not entry_ids:
         return {}
@@ -740,6 +768,7 @@ def get_report_spread(db: Session, entry_ids: list[int]) -> dict[int, dict]:
             func.min(ScamReport.created_at),
             func.max(ScamReport.created_at),
             func.count(ScamReport.id),
+            func.count(func.distinct(ScamReport.ip_address)),
         )
         .filter(ScamReport.entry_id.in_(entry_ids))
         .group_by(ScamReport.entry_id)
@@ -747,13 +776,19 @@ def get_report_spread(db: Session, entry_ids: list[int]) -> dict[int, dict]:
     )
 
     result: dict[int, dict] = {}
-    for entry_id, first, last, count in rows:
+    for entry_id, first, last, count, distinct_ips in rows:
         spread_minutes = (last - first).total_seconds() / 60 if first and last else 0.0
         result[entry_id] = {
             "report_spread_minutes": round(spread_minutes, 1),
             "coordinated_pattern_suspected": (
                 count >= BURST_MIN_REPORTS and spread_minutes <= BURST_WINDOW_MINUTES
             ),
+            "distinct_ip_count": distinct_ips,
+            # distinct_ips == 0 signifie "IP inconnue pour tous ces
+            # signalements" (données antérieures à cette colonne, ou IP non
+            # transmise) — jamais traité comme suspect par défaut, seul un
+            # décompte confirmé à 1 déclenche ce signal.
+            "low_diversity_suspected": count >= BURST_MIN_REPORTS and distinct_ips == 1,
         }
     return result
 
