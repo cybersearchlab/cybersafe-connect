@@ -41,6 +41,7 @@ SECURITY PRINCIPLES
 • No direct password handling inside routes
 • No direct cryptographic operations inside routes
 • Business logic isolated from transport layer
+• Rate limiting applied to unauthenticated endpoints (slowapi)
 
 --------------------------------------------------------------------------------
 AVAILABLE ENDPOINTS
@@ -73,17 +74,22 @@ GET     /me
 ================================================================================
 """
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from sqlalchemy.orm import Session
 
+from config import (
+    RATE_LIMIT_LOGIN,
+    RATE_LIMIT_REFRESH,
+    RATE_LIMIT_REGISTER,
+    RATE_LIMIT_VERIFY,
+)
 from dependencies import (
     get_current_user,
     get_db,
     user_to_dict
 )
-
+from limiter import limiter
 from models import User
-
 from schemas import (
     LoginRequest,
     RefreshTokenRequest,
@@ -91,7 +97,6 @@ from schemas import (
     ResendVerificationRequest,
     VerifyEmailRequest
 )
-
 from services import (
     login_user,
     refresh_user_token,
@@ -115,12 +120,16 @@ router = APIRouter(
 # =============================================================================
 
 @router.post("/register")
+@limiter.limit(RATE_LIMIT_REGISTER)
 def register(
+    request: Request,
     payload: RegisterRequest,
     db: Session = Depends(get_db)
 ):
     """
     Register a new user account.
+
+    Rate limited: see RATE_LIMIT_REGISTER.
 
     Workflow:
 
@@ -146,12 +155,16 @@ def register(
 # =============================================================================
 
 @router.post("/verify-email")
+@limiter.limit(RATE_LIMIT_VERIFY)
 def verify_email_route(
+    request: Request,
     payload: VerifyEmailRequest,
     db: Session = Depends(get_db)
 ):
     """
     Verify account ownership using OTP code.
+
+    Rate limited: see RATE_LIMIT_VERIFY.
 
     Returns
     -------
@@ -169,12 +182,16 @@ def verify_email_route(
 # =============================================================================
 
 @router.post("/resend-verification")
+@limiter.limit(RATE_LIMIT_VERIFY)
 def resend_verification_route(
+    request: Request,
     payload: ResendVerificationRequest,
     db: Session = Depends(get_db)
 ):
     """
     Generate and resend new verification code.
+
+    Rate limited: see RATE_LIMIT_VERIFY.
 
     Returns
     -------
@@ -192,12 +209,16 @@ def resend_verification_route(
 # =============================================================================
 
 @router.post("/login")
+@limiter.limit(RATE_LIMIT_LOGIN)
 def login(
+    request: Request,
     payload: LoginRequest,
     db: Session = Depends(get_db)
 ):
     """
     Authenticate user credentials.
+
+    Rate limited: see RATE_LIMIT_LOGIN.
 
     Returns
     -------
@@ -215,12 +236,16 @@ def login(
 # =============================================================================
 
 @router.post("/refresh")
+@limiter.limit(RATE_LIMIT_REFRESH)
 def refresh_token(
+    request: Request,
     payload: RefreshTokenRequest,
     db: Session = Depends(get_db)
 ):
     """
     Generate new access token using refresh token.
+
+    Rate limited: see RATE_LIMIT_REFRESH.
 
     Returns
     -------

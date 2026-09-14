@@ -310,9 +310,15 @@ def create_access_token(
 # CREATE REFRESH TOKEN
 # =============================================================================
 
-def create_refresh_token(subject: str) -> str:
+def create_refresh_token(
+    subject: str,
+    token_version: int = 0
+) -> str:
     """
     Generate long-lived refresh token.
+
+    The token embeds the user's current token_version so that, on refresh,
+    we can reject tokens issued before the latest rotation.
     """
 
     return _create_token(
@@ -322,7 +328,9 @@ def create_refresh_token(subject: str) -> str:
 
         expires_delta=timedelta(
             days=REFRESH_TOKEN_EXPIRE_DAYS
-        )
+        ),
+
+        extra={"token_version": token_version}
     )
 
 
@@ -431,3 +439,29 @@ def decode_token(
         )
 
     return payload
+
+# =============================================================================
+# OTP HASHING
+# =============================================================================
+# OTP codes are short-lived secrets: storing them in plain text in the
+# database would let any read access to the DB (leak, backup, SQL injection)
+# verify any pending account. We hash them with the same password hasher
+# (Argon2) before storage, and compare hashes on verification.
+# =============================================================================
+
+_otp_context = CryptContext(schemes=["argon2"], deprecated="auto")
+
+
+def hash_otp(code: str) -> str:
+    """Hash an OTP code before storing it in the database."""
+    return _otp_context.hash(code)
+
+
+def verify_otp(code: str, code_hash: str) -> bool:
+    """Verify a plain OTP code against its stored hash."""
+    if not code_hash:
+        return False
+    try:
+        return _otp_context.verify(code, code_hash)
+    except Exception:
+        return False

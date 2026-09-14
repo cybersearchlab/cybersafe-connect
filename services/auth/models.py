@@ -69,8 +69,8 @@ Columns:
     account_status
         Current account lifecycle status
 
-    verification_code
-        OTP verification code
+    verification_code_hash
+        Argon2 hash of the OTP verification code
 
     created_at
         Account creation timestamp
@@ -90,9 +90,9 @@ ACCOUNT LIFECYCLE
         is_verified = False
         account_status = pending
 
-2. System generates OTP verification code
+2. System generates OTP verification code (hashed with Argon2)
 
-        verification_code = "492731"
+        verification_code_hash = "$argon2id$v=19$..."
 
 3. User validates OTP
 
@@ -115,7 +115,7 @@ SECURITY IMPROVEMENTS IMPLEMENTED
 • Centralized account lifecycle management using AccountStatus enum
 • Database-level protection against invalid role injection
 • Explicit password hash storage size
-• Verification code stored as string (preserves leading zeros)
+• Verification code stored as an Argon2 hash (never in plain text)
 • Timestamp tracking for audit logging
 • Account suspension capability for incident response
 • Last login monitoring for suspicious behavior detection
@@ -333,8 +333,8 @@ class User(Base):
     #
     #       A7X92P
     # -------------------------------------------------------------------------
-    verification_code = Column(
-        String(8),
+    verification_code_hash = Column(
+        String(255),
         nullable=True
     )
 
@@ -395,4 +395,18 @@ class User(Base):
     last_login = Column(
         DateTime(timezone=True),
         nullable=True
+    )
+
+    # -------------------------------------------------------------------------
+    # TOKEN VERSION (refresh token invalidation)
+    #
+    # Incremented on every successful refresh. Old refresh tokens embed the
+    # previous version number and are rejected on use — this gives us a way
+    # to invalidate them without storing every issued token in a table.
+    # -------------------------------------------------------------------------
+    token_version = Column(
+        Integer,
+        nullable=False,
+        default=0,
+        server_default="0"
     )

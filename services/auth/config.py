@@ -1,4 +1,20 @@
+"""
+services/auth/config.py
+================================================================================
+Configuration — Authentication Microservice (CyberSafe Connect)
+================================================================================
+
+Centralizes all configurable values for the service: database connection,
+JWT secret, CORS origins, SMTP settings, and rate limits.
+
+Following the scam-checker module's pattern: every value read from an
+environment variable has a safe default for local development, never to be
+used as-is in production.
+================================================================================
+"""
+
 import os
+
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -27,3 +43,20 @@ ALLOWED_ORIGINS = [
 
 ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
 PORT = int(os.getenv("PORT", "8001"))
+
+
+# =============================================================================
+# RATE LIMITING (anti-abuse)
+# =============================================================================
+# Limits are expressed in slowapi format: "<count>/<period>" where period is
+# one of: second, minute, hour, day.
+#
+# Rationale:
+#   - /register      : 3/hour    -> anti account-spam
+#   - /login         : 5/minute  -> anti brute force
+#   - /verify-email  : 5/minute  -> anti OTP brute force
+#   - /refresh       : 10/minute -> anti token abuse
+RATE_LIMIT_REGISTER = os.getenv("RATE_LIMIT_REGISTER", "3/hour")
+RATE_LIMIT_LOGIN = os.getenv("RATE_LIMIT_LOGIN", "5/minute")
+RATE_LIMIT_VERIFY = os.getenv("RATE_LIMIT_VERIFY", "5/minute")
+RATE_LIMIT_REFRESH = os.getenv("RATE_LIMIT_REFRESH", "10/minute")
