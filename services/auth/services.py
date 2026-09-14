@@ -63,7 +63,9 @@ from security import (
     create_access_token,
     create_refresh_token,
     decode_token,
+    hash_otp,
     hash_password,
+    verify_otp,
     verify_password,
 )
 
@@ -95,14 +97,18 @@ def register_user(
     """
 
     existing_user = db.query(User).filter(
-        User.email == payload.email
+    User.email == payload.email
     ).first()
 
     if existing_user:
-        raise HTTPException(
-            status_code=400,
-            detail="Email already exists"
-        )
+        # Do NOT reveal whether the email exists (user enumeration).
+        # Return the same generic message as the success path.
+        # Note: we do NOT send a new OTP, to avoid spamming existing users.
+        return {
+            "success": True,
+            "message": "Account created successfully. Verify your email.",
+            "data": None
+        }
 
     code, expires_at = generate_otp()
 
@@ -117,7 +123,7 @@ def register_user(
 
         role=UserRole(payload.role),
 
-        verification_code=code,
+        verification_code_hash=hash_otp(code),
 
         verification_expires_at=expires_at,
 
@@ -175,7 +181,7 @@ def verify_email(
             "data": user_to_dict(user)
         }
 
-    if user.verification_code != payload.code:
+    if not verify_otp(payload.code, user.verification_code_hash):
         raise HTTPException(
             status_code=400,
             detail="Invalid OTP code"
@@ -193,7 +199,7 @@ def verify_email(
 
     user.is_verified = True
     user.account_status = AccountStatus.active
-    user.verification_code = None
+    user.verification_code_hash = None
     user.verification_expires_at = None
 
     db.commit()
@@ -236,7 +242,7 @@ def resend_verification(
 
     code, expires_at = generate_otp()
 
-    user.verification_code = code
+    user.verification_code_hash = hash_otp(code)
     user.verification_expires_at = expires_at
 
     db.commit()
@@ -321,7 +327,8 @@ def login_user(
     )
 
     refresh_token = create_refresh_token(
-        subject
+        subject,
+        user.token_version
     )
 
     return {
@@ -380,6 +387,14 @@ def refresh_user_token(
             detail="User not found"
         )
 
+    # Reject refresh tokens issued before the latest rotation.
+    # This invalidates the old token as soon as a new one is issued.
+    if token_data.get("token_version") != user.token_version:
+        raise HTTPException(
+            status_code=401,
+            detail="Refresh token has been revoked"
+        )
+
     subject = str(user.id)
 
     extra = {
@@ -392,8 +407,14 @@ def refresh_user_token(
         extra
     )
 
+    # Rotate: increment the version so the presented token becomes invalid,
+    # then issue a new one bound to the new version.
+    user.token_version += 1
+    db.commit()
+
     new_refresh = create_refresh_token(
-        subject
+        subject,
+        user.token_version
     )
 
     return {
