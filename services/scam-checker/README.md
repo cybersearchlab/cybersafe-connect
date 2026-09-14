@@ -11,12 +11,15 @@ Cahier des charges : `CRL - CDC - Module 3 - 2.0.docx` (Bureau).
 
 `8002`
 
-## Les 4 méthodes de détection
+## Les 4 méthodes de détection (+ 1 optionnelle)
 
 1. **Moteur de règles bilingue** (FR/EN) — `rules.py`
 2. **Base de références** (liste noire + liste blanche) — `models.py` / `services.py`
 3. **Signalement, confirmation/rejet admin** + journal d'audit — `services.py`
 4. **Analyse heuristique de l'URL** — `url_analyzer.py`
+5. **(optionnelle) Google Safe Browsing** — `safe_browsing.py`, voir « Écarts
+   assumés » ci-dessous. Désactivée par défaut (aucune clé requise) ; le
+   service fonctionne intégralement sans elle.
 
 **Langue de sortie du verdict** (28/08/2026) : `POST /scam/check` accepte un
 champ optionnel `lang` (`"fr"` par défaut, ou `"en"`) — ne change que la
@@ -295,6 +298,29 @@ Justification retenue : puisqu'une entrée ne devient jamais "confirmed" sans
 revue humaine, une contestation a posteriori n'a plus d'utilité — elle
 existait dans le CDC d'origine spécifiquement pour corriger un effet ROUGE
 déclenché automatiquement sans supervision.
+
+### Google Safe Browsing (§10, « Exclus v1 ») — décision du 14/09/2026
+
+Le CDC exclut explicitement les « appels à des API externes de réputation
+(Google Safe Browsing, VirusTotal) » en v1. Demande explicite du porteur de
+projet : le moteur de règles seul ne peut jamais détecter un site de
+phishing tout juste créé, ni recouper une menace déjà confirmée à l'échelle
+mondiale — seule une base de menaces externe le peut.
+
+Intégrée en `safe_browsing.py` comme **5ᵉ méthode optionnelle** (voir le
+docstring du fichier pour la justification complète) :
+
+- **Ne viole pas le principe anti-SSRF** du §8 : l'API ne contacte jamais le
+  site cible, seulement la base de menaces de Google elle-même.
+- **Compromis assumé** : contrairement au reste du module, l'URL soumise par
+  le citoyen est transmise à un tiers (Google) lors de cette vérification —
+  une perte de confidentialité partielle, documentée en toute transparence.
+- **Fail open** : sans clé configurée (`SAFE_BROWSING_API_KEY` vide par
+  défaut), en cas de panne ou de timeout (3s), le service continue de
+  fonctionner exactement comme avant cette intégration — jamais de blocage
+  d'une vérification citoyenne pour une panne tierce.
+- **Reste gratuit** : quota gratuit très supérieur au volume attendu du
+  projet ; à surveiller si l'usage grossit fortement.
 
 ## Pistes d'enrichissement (v2)
 

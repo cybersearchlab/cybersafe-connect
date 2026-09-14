@@ -115,6 +115,24 @@ BURST_MIN_REPORTS = int(os.getenv("BURST_MIN_REPORTS", "3"))
 BURST_WINDOW_MINUTES = float(os.getenv("BURST_WINDOW_MINUTES", "5"))
 
 # =============================================================================
+# GOOGLE SAFE BROWSING (methode 5, optionnelle — decision du 14/09/2026)
+# =============================================================================
+# Ecart assume vis-a-vis du CDC (§10, "Exclus v1") — voir safe_browsing.py
+# pour la justification complete (pourquoi ceci ne viole pas le principe
+# anti-SSRF du module) et le compromis de confidentialite assume.
+#
+# Vide par defaut : le service fonctionne intégralement sans cette clé (voir
+# safe_browsing.check_url_safe_browsing, "fail open") — cette méthode est un
+# signal SUPPLEMENTAIRE, jamais une dépendance obligatoire.
+SAFE_BROWSING_API_KEY = os.getenv("SAFE_BROWSING_API_KEY", "")
+
+# Score forcé sur une correspondance Safe Browsing confirmée — même logique
+# que BLACKLIST_HIT_SCORE (une menace externe confirmée suffit seule,
+# indépendamment du texte), mais réglable séparément si l'expérience montre
+# qu'un niveau de confiance différent est justifié entre les deux sources.
+SAFE_BROWSING_HIT_SCORE = int(os.getenv("SAFE_BROWSING_HIT_SCORE", "100"))
+
+# =============================================================================
 # LIMITATION DE DEBIT (anti-abus)
 # =============================================================================
 # Non chiffrée dans le CDC d'origine (« limité par IP/compte », sans valeur) —

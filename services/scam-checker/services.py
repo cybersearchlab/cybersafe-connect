@@ -41,6 +41,7 @@ from sqlalchemy.orm import Session
 
 import rules
 import url_analyzer
+from safe_browsing import check_url_safe_browsing
 from config import (
     ALLOWED_EVIDENCE_TYPES,
     BLACKLIST_HIT_SCORE,
@@ -49,6 +50,7 @@ from config import (
     EVIDENCE_DIR,
     MAX_EVIDENCE_PER_REPORT,
     MAX_EVIDENCE_SIZE_BYTES,
+    SAFE_BROWSING_HIT_SCORE,
     SCORE_ORANGE_THRESHOLD,
     SCORE_ROUGE_THRESHOLD,
 )
@@ -278,6 +280,7 @@ MOTIF_TRANSLATIONS_EN = {
     "encodage punycode suspect (xn--)": "suspicious punycode encoding (xn--)",
     "longueur/complexité anormale du lien": "abnormal link length/complexity",
     "Élément confirmé en liste noire": "Element confirmed on the blacklist",
+    "Confirmé malveillant par Google Safe Browsing": "Confirmed malicious by Google Safe Browsing",
     "Aucun indicateur suspect détecté": "No suspicious indicator detected",
     "arnaque sentimentale (romance scam)": "romance scam",
     "faux support technique": "fake tech support",
@@ -449,6 +452,23 @@ def check_scam(content: str, db: Session, lang: str = "fr") -> dict:
             "conseils": [VERDICT_BASE_ADVICE[Verdict.rouge][lang]],
             "is_url": is_url_input,
             "blacklisted": True,
+            "whitelisted": whitelisted,
+        }
+
+    # --- Étape 4bis : méthode 5 (Safe Browsing), uniquement pour une URL -----
+    # Écart assumé vis-à-vis du CDC §10 (voir safe_browsing.py pour la
+    # justification complète). "fail open" : check_url_safe_browsing()
+    # retourne None (jamais une exception) si la clé est absente ou l'appel
+    # échoue — le reste de l'analyse continue alors normalement, sans ce
+    # signal, exactement comme avant l'intégration de cette méthode.
+    if is_url_input and check_url_safe_browsing(content) is True:
+        return {
+            "verdict": Verdict.rouge,
+            "score": SAFE_BROWSING_HIT_SCORE,
+            "motifs": [_translate_motif("Confirmé malveillant par Google Safe Browsing", lang)],
+            "conseils": [VERDICT_BASE_ADVICE[Verdict.rouge][lang]],
+            "is_url": is_url_input,
+            "blacklisted": False,
             "whitelisted": whitelisted,
         }
 

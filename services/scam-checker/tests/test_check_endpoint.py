@@ -154,3 +154,45 @@ class TestScamCheckLanguage:
         data = response.json()["data"]
         assert "fake tech support" in data["motifs"]
         assert not any("support technique" in m for m in data["motifs"])
+
+
+class TestSafeBrowsingIntegration:
+    # Aucun appel réseau réel : services.check_url_safe_browsing (la
+    # référence importée dans services.py, pas dans safe_browsing.py) est
+    # simulée. Sans clé configurée (cas par défaut de l'environnement de
+    # test), elle renvoie déjà None nativement — ces tests forcent les deux
+    # autres cas (menace confirmée / vérification indisponible).
+    def test_confirmed_threat_forces_rouge(self, client, monkeypatch):
+        monkeypatch.setattr("services.check_url_safe_browsing", lambda url: True)
+        response = client.post("/scam/check", json={"content": "http://phishing-connu.com"})
+        data = response.json()["data"]
+        assert data["verdict"] == "ROUGE"
+        assert data["score"] == 100
+        assert data["motifs"] == ["Confirmé malveillant par Google Safe Browsing"]
+
+    def test_confirmed_threat_translated_to_english(self, client, monkeypatch):
+        monkeypatch.setattr("services.check_url_safe_browsing", lambda url: True)
+        response = client.post(
+            "/scam/check", json={"content": "http://phishing-connu.com", "lang": "en"}
+        )
+        assert response.json()["data"]["motifs"] == ["Confirmed malicious by Google Safe Browsing"]
+
+    def test_unavailable_check_does_not_block_analysis(self, client, monkeypatch):
+        # "fail open" : None (clé absente, timeout, erreur...) ne doit jamais
+        # empêcher le reste du moteur de fonctionner normalement. Domaine
+        # neutre (sans mot-clé de marque ni signal suspect) pour isoler
+        # strictement le comportement de cette intégration.
+        monkeypatch.setattr("services.check_url_safe_browsing", lambda url: None)
+        response = client.post("/scam/check", json={"content": "https://wikipedia.org"})
+        assert response.status_code == 200
+        assert response.json()["data"]["verdict"] == "VERT"
+
+    def test_not_called_for_free_text(self, client, monkeypatch):
+        # Un texte libre (pas une URL) n'a rien à vérifier auprès de Safe
+        # Browsing — s'assurer qu'on ne l'appelle même pas dans ce cas.
+        calls = []
+        monkeypatch.setattr(
+            "services.check_url_safe_browsing", lambda url: calls.append(url) or True
+        )
+        client.post("/scam/check", json={"content": "Bonjour, comment allez-vous ?"})
+        assert calls == []
